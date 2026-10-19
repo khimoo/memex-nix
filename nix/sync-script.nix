@@ -10,11 +10,13 @@
 #
 # 同期の本体は nix/bisync-lib.nix。ここは「どの対象を、どこへ」だけを持つ層。
 #
-# attachments / papis は { dir, folder } か null。null なら その対象は生成しない。
+# attachments / papis は { dir, folder }、originals は vaultDir / backupFolder も持つ。
+# null ならその対象は生成しない。
 { pkgs
 , rcloneRemote
 , attachments ? null
 , papis ? null
+, originals ? null
 }:
 
 let
@@ -22,7 +24,8 @@ let
   bisync = import ./bisync-lib.nix { inherit pkgs; };
 
   targets = lib.optional (attachments != null) "attachments"
-    ++ lib.optional (papis != null) "papis";
+    ++ lib.optional (papis != null) "papis"
+    ++ lib.optional (originals != null) "originals";
 
   targetList = lib.concatStringsSep "|" targets;
 
@@ -40,14 +43,19 @@ let
   # 対象が1つしかない環境で --only を勧めても意味がない。
   ++ lib.optional (lib.length targets > 1)
     (example "--only ${lib.last targets}" "${lib.last targets} だけ同期する")
-  ++ [ (example "--dry-run" "rclone に渡す引数はそのまま素通しする") ]);
+  ++ [ (example "--dry-run" "rclone に渡す引数はそのまま素通しする") ]
+  ++ lib.optionals (originals != null) [
+    ""
+    "  Originals の初回は両側の内容を確認し、zettelkasten-sync --only originals --resync を実行してください。"
+    "  --resync は通常の競合処理とは別です。バックアップがあっても事前確認が必要です。"
+  ]);
 
   # 対象ごとの同期ブロック。baseline(同期の記録)の名前は対象ごとに固定で、
   # 変えると既存マシンが「記録なし」と判定されて resync を要求される。
   syncBlock = { name, label, dir, folder, baseline }: ''
     if [ -z "$only" ] || [ "$only" = ${name} ]; then
       echo "==> ${label}: ${dir} <-> ${rcloneRemote}:${folder}" >&2
-      zk_bisync ${lib.escapeShellArg label} ${lib.escapeShellArg dir} \
+      ZK_SYNC_TARGET=${lib.escapeShellArg name} zk_bisync ${lib.escapeShellArg label} ${lib.escapeShellArg dir} \
         ${lib.escapeShellArg "${rcloneRemote}:${folder}"} \
         ${baseline} "''${rclone_args[@]}" || status=1
     fi
@@ -58,6 +66,52 @@ pkgs.writeShellApplication {
   runtimeInputs = bisync.runtimeInputs;
   text = ''
     ${bisync.text}
+
+    ${lib.optionalString (originals != null) ''
+      zk_sync_originals() {
+        local baseline_dir arg resync=false
+        baseline_dir="''${XDG_CACHE_HOME:-$HOME/.cache}/rclone/bisync-originals"
+        for arg in "''${rclone_args[@]}"; do
+          if [ "$arg" = "--resync" ]; then
+            resync=true
+          fi
+        done
+        local baseline_lsts
+        shopt -s nullglob
+        baseline_lsts=("$baseline_dir"/*.lst)
+        shopt -u nullglob
+        if [ "''${#baseline_lsts[@]}" -eq 0 ] && [ "$resync" != true ] && [ "''${ZK_FORCE_RESYNC:-}" != 1 ]; then
+          echo "Originals: 同期の記録がありません。両側の内容を確認して手動で初期化してください。" >&2
+          echo "  → zettelkasten-sync --only originals --resync" >&2
+          return 1
+        fi
+
+        local host vault backup_root localbackup localrun runid
+        host="$(uname -n)" || return 1
+        case "$host" in
+          "" | . | .. | *[!a-zA-Z0-9._-]*)
+            echo "Originals: 退避先に使用できないホスト名です: $host" >&2
+            return 1
+            ;;
+        esac
+        vault="$(realpath -m -- ${lib.escapeShellArg originals.vaultDir})" || return 1
+        backup_root="''${XDG_DATA_HOME:-$HOME/.local/share}/zettelkasten/originals-backups"
+        localbackup="$(realpath -m -- "$backup_root/$host")" || return 1
+        if [ "$vault" = / ] || [ "$localbackup" = "$vault" ] || [[ "$localbackup" == "$vault/"* ]]; then
+          echo "Originals: ローカル退避先は vault の外に置いてください: $localbackup" >&2
+          return 1
+        fi
+        mkdir -p -- "$localbackup" || return 1
+        localrun="$(mktemp -d "$localbackup/$(date -u +%Y%m%dT%H%M%SZ)-XXXXXXXX")" || return 1
+        runid="''${localrun##*/}"
+        echo ${lib.escapeShellArg "==> Originals: ${originals.dir} <-> ${rcloneRemote}:${originals.folder}"} >&2
+        ZK_SYNC_TARGET=originals ZK_CONFLICT_RESOLVE=none zk_bisync Originals ${lib.escapeShellArg originals.dir} \
+          ${lib.escapeShellArg "${rcloneRemote}:${originals.folder}"} bisync-originals \
+          --recover --max-lock 2m --conflict-loser num --backup-dir1 "$localrun" \
+          --backup-dir2 ${lib.escapeShellArg "${rcloneRemote}:${originals.backupFolder}"}/"$host/$runid" \
+          "''${rclone_args[@]}"
+      }
+    ''}
 
     usage() {
       cat >&2 <<'EOF'
@@ -121,6 +175,11 @@ pkgs.writeShellApplication {
       inherit (papis) dir folder;
       baseline = "bisync-papis";
     })}
+    ${lib.optionalString (originals != null) ''
+      if [ -z "$only" ] || [ "$only" = originals ]; then
+        zk_sync_originals || status=1
+      fi
+    ''}
 
     exit "$status"
   '';

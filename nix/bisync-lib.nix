@@ -71,7 +71,9 @@
     }
 
     zk_bisync() {
-      local label dir remote baseline_dir
+      local label dir remote baseline_dir sync_target
+      local ZK_CONFLICT_RESOLVE="''${ZK_CONFLICT_RESOLVE:-newer}"
+      sync_target="''${ZK_SYNC_TARGET:-<対象名>}"
       label="$1"
       dir="$2"
       remote="$3"
@@ -117,7 +119,7 @@
           elif [ "''${ZK_FORCE_RESYNC:-}" != "1" ] && [ "$resync" != true ]; then
             echo "$label: このマシンには同期の記録が無いのに、両側にデータがあります: $dir <-> $remote" >&2
             echo "  (記録の喪失か、中身の違う2つを合流させようとしているかのどちらか)" >&2
-            echo "  → 合流させる場合のみ明示的に: ZK_FORCE_RESYNC=1 $ZK_SYNC_NAME --resync" >&2
+            echo "  → 合流させる場合のみ明示的に: ZK_FORCE_RESYNC=1 $ZK_SYNC_NAME --only $sync_target --resync" >&2
             return 1
           fi
           resync=true
@@ -133,7 +135,7 @@
       if [ "$resync" = true ] && [ "$first_run" != true ] && [ "''${ZK_FORCE_RESYNC:-}" != "1" ]; then
         echo "$label: 同期の記録が既に存在します($baseline_dir)。" >&2
         echo "  誤操作による上書きを防ぐため --resync を中止しました。" >&2
-        echo "  意図的にやり直す場合のみ ZK_FORCE_RESYNC=1 を付けて再実行してください。" >&2
+        echo "  意図的にやり直す場合のみ: ZK_FORCE_RESYNC=1 $ZK_SYNC_NAME --only $sync_target --resync" >&2
         return 1
       fi
 
@@ -156,7 +158,7 @@
       rclone "''${ZK_RCLONE_ARGS[@]}" bisync \
         "$dir" "$remote" \
         --workdir "$baseline_dir" \
-        --conflict-resolve newer --resilient --verbose \
+        --conflict-resolve "$ZK_CONFLICT_RESOLVE" --resilient --verbose \
         "''${resync_args[@]}" "$@"
     }
   '';

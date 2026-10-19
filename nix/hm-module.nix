@@ -22,8 +22,21 @@ let
   # 同期対象のパスは規約で固定(options にしない)。
   attachmentsDir = "${cfg.vaultDir}/attachments";
   papisDir = "${cfg.vaultDir}/references";
+  originalsDir = "${cfg.vaultDir}/Originals";
 
-  anySync = cfg.attachments.enable || cfg.papis.enable;
+  anySync = cfg.attachments.enable || cfg.papis.enable || cfg.originals.enable;
+
+  # 比較前に区切りと . / .. を正規化する。symlink は実行時にも確認する。
+  pathParts = path: lib.foldl' (parts: part:
+    if part == "" || part == "." then parts
+    else if part == ".." then (if parts == [ ] then [ ] else lib.init parts)
+    else parts ++ [ part ]
+  ) [ ] (lib.splitString "/" path);
+  normalizedPath = path: "/${lib.concatStringsSep "/" (pathParts path)}";
+  within = parent: child: parent == "/" || child == parent || lib.hasPrefix "${parent}/" child;
+  originalsFolder = normalizedPath cfg.originals.folder;
+  originalsBackupFolder = normalizedPath cfg.originals.backupFolder;
+  originalsLocalBackup = normalizedPath "${config.xdg.dataHome}/zettelkasten/originals-backups";
 
   # 同期コマンドは1本。何を同期するかは eval 時にここで焼き込む(実行時に設定を読む層は無い)。
   syncScript = import ./sync-script.nix {
@@ -38,6 +51,15 @@ let
     papis =
       if cfg.papis.enable
       then { dir = papisDir; inherit (cfg.papis) folder; }
+      else null;
+
+    originals =
+      if cfg.originals.enable
+      then {
+        dir = originalsDir;
+        inherit (cfg) vaultDir;
+        inherit (cfg.originals) folder backupFolder;
+      }
       else null;
   };
 
@@ -92,7 +114,7 @@ in
       example = "/home/alice/zettelkasten";
       description = ''
         vault(Obsidian のノートを置くフォルダ)の絶対パス。
-        直下の attachments/ と references/ が同期対象になる。
+        直下の attachments/、references/、Originals/ を設定に応じて同期する。
         これがマシン固有の唯一の必須設定。
       '';
     };
@@ -179,6 +201,34 @@ in
       };
     };
 
+    originals = {
+      enable = lib.mkEnableOption "vault 直下 Originals/ の Google Drive 双方向同期";
+
+      folder = lib.mkOption {
+        type = lib.types.str;
+        default = "zettelkasten-originals";
+        description = "原本を置く Google Drive 側のフォルダ(remote からの相対パス)。";
+      };
+
+      backupFolder = lib.mkOption {
+        type = lib.types.str;
+        default = "zettelkasten-originals-backups";
+        description = "原本の退避先フォルダ(同じ remote 内、同期先と重複しない相対パス)。";
+      };
+
+      intervalSeconds = lib.mkOption {
+        type = lib.types.ints.positive;
+        default = 900;
+        description = "原本の定期バックストップ同期の間隔(秒)。";
+      };
+
+      autoSync = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "原本の自動同期を有効化する。実 Drive 検証と手動初期化後に有効にする。";
+      };
+    };
+
     obsidian = {
       enable = lib.mkOption {
         type = lib.types.bool;
@@ -222,6 +272,18 @@ in
           assertion = lib.hasPrefix "/" cfg.vaultDir;
           message = "services.zettelkasten.vaultDir には絶対パスを指定してください: ${cfg.vaultDir}";
         }
+        {
+          assertion = !cfg.originals.enable || (
+            originalsFolder != "/" && originalsBackupFolder != "/"
+            && !(within originalsFolder originalsBackupFolder)
+            && !(within originalsBackupFolder originalsFolder)
+          );
+          message = "Originals の folder と backupFolder は空でなく、同一・祖先子孫で重複しないパスにしてください。";
+        }
+        {
+          assertion = !cfg.originals.enable || !(within (normalizedPath cfg.vaultDir) originalsLocalBackup);
+          message = "Originals のローカル退避先(xdg.dataHome/zettelkasten/originals-backups)は vaultDir の外に置いてください。";
+        }
       ];
     })
 
@@ -256,6 +318,14 @@ in
       dir = papisDir;
       target = "papis";
       inherit (cfg.papis) intervalSeconds;
+    }))
+
+    (lib.mkIf (cfg.enable && cfg.originals.enable && cfg.originals.autoSync) (mkSyncJob {
+      name = "originals-sync";
+      description = "Originals を Google Drive へ bisync する";
+      dir = originalsDir;
+      target = "originals";
+      inherit (cfg.originals) intervalSeconds;
     }))
 
     # papis ライブラリは item ごとに info.yaml と PDF が同居するので、フォルダを丸ごと bisync

@@ -76,7 +76,7 @@ pkgs.writeShellApplication {
     # ---- rclone ----
     say ""
     cat >&2 <<'EOF'
-    添付ファイルと文献 PDF は git ではなく Google Drive で同期します。
+    添付ファイル・文献 PDF・Originals は Google Drive で同期します(有効な対象のみ)。
     その接続は rclone が持ちます(この repo は認証情報を持ちません)。
     EOF
 
@@ -104,9 +104,9 @@ pkgs.writeShellApplication {
       if ! ${lib.getExe syncScript}; then
         say ""
         say "同期に失敗しました。上の rclone のメッセージが理由です。"
-        say "  → 「このマシンには記録が無いのに Drive 側にデータがある」場合は、"
-        say "    Drive の中身を確認したうえで次を実行してください:"
-        say "      ZK_FORCE_RESYNC=1 zettelkasten-sync --resync"
+        say "  → 記録が無い場合は両側の中身を確認し、失敗した対象だけを初期化してください:"
+        say "      ZK_FORCE_RESYNC=1 zettelkasten-sync --only <対象名> --resync"
+        say "    対象名は zettelkasten-sync --help で確認できます。Originals は originals です。"
       fi
     else
       say "同期は行いませんでした。あとで zettelkasten-sync を実行してください。"
@@ -126,7 +126,8 @@ pkgs.writeShellApplication {
             git remote add origin <URL>
             git push -u origin main
 
-    日常の同期は自動です(ファイルを変更すると走り、取りこぼしは定期実行が拾います)。
+    自動同期が有効な対象は、ファイル変更と定期実行で同期します。
+    Originals は実 Drive での手動検証・初期化後に originals.autoSync を有効にしてください。
     手で走らせたいときは zettelkasten-sync を実行してください。
     EOF
   '';

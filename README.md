@@ -157,7 +157,51 @@ zettelkasten-sync --dry-run    # 以降の引数は rclone bisync へ素通し
 
 **「このマシンには同期の記録が無いのに Drive 側にはデータがある」** と言われて止まったときは、
 記録の喪失か、既存の Drive に新しいマシンを合流させようとしているかのどちらか。中身を確認して、
-合流させる場合だけ `ZK_FORCE_RESYNC=1 zettelkasten-sync --resync` を実行する。
+合流させる場合だけ、対象を限定して `ZK_FORCE_RESYNC=1 zettelkasten-sync --only <対象名> --resync` を実行する。
+
+
+## Originals の同期
+
+`originals.enable = true` で、Git管理外の `<vault>/Originals` を同期対象に加える。
+
+| option | 既定 | 用途 |
+|---|---|---|
+| `originals.enable` | `false` | 原本の双方向同期をコマンドへ追加 |
+| `originals.folder` | `"zettelkasten-originals"` | 同じremote内の同期先 |
+| `originals.backupFolder` | `"zettelkasten-originals-backups"` | 同期対象外の旧版退避先 |
+| `originals.intervalSeconds` | `900` | 自動同期時の定期間隔 |
+| `originals.autoSync` | `false` | 初期化・実Drive試験後に自動実行を有効化 |
+
+通常同期の競合は勝者を選ばず両版を別名保存する。元の画像パスがなくなる場合があるため、
+競合ログを確認し、人が採用版を元の名前へ戻すかノートの参照を直してから再同期する。
+削除は伝播するが、上書き・削除される版をローカルとremoteそれぞれの退避先へ保持する。
+退避先はホスト名と一意な実行IDで分け、通常の同期対象には含めない。
+ローカル退避先は `${XDG_DATA_HOME:-$HOME/.local/share}/zettelkasten/originals-backups/`。
+この退避は同じDriveアカウントの喪失に備える独立バックアップではない。
+
+Originalsは `--recover --max-lock 2m` を使う。強制中断時に残るロックは最後の更新から
+約2分で期限切れとなり、次の通常同期が直近の成功履歴から復旧を試みる。
+ロックの自動削除や自動resyncは行わない。履歴欠損・復旧失敗は停止して調査する。
+[rcloneの復旧仕様](https://rclone.org/bisync/#recover)と
+[ロック期限の仕様](https://rclone.org/bisync/#max-lock)を参照。
+
+Originalsは同期履歴がないとき自動初期化せず停止する。両PCとDriveの内容を同期外へ退避・照合し、
+初期化の基準を決めてから、対象を限定して実行する:
+
+```sh
+zettelkasten-sync --only originals --resync --dry-run
+zettelkasten-sync --only originals --resync
+zettelkasten-sync --only originals
+```
+
+`--dry-run`でも退避用の空ディレクトリが作られる場合がある。履歴が既にある場合の
+`ZK_FORCE_RESYNC=1` は、内容確認と退避後の手動復旧に限る。自動再試行にresyncを組み込まない。
+resyncでは通常競合の両版保存と挙動が違うため、dry-runだけで元データの退避を代用しない。
+
+導入時は隔離データで両PC追加、同名競合、削除・上書きと復元、中断、重複実行を確認する。
+確認前は `autoSync = false` を維持する。同期履歴は各PCのローカルcacheに置き、他PCと共有しない。
+外部フレークの利用側は更新したinputを使う必要がある。ソースの編集だけでは既存の
+`flake.lock`や実行中サービスは更新されない。
 
 ## vault の骨格を配る側へ
 
