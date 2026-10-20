@@ -13,7 +13,8 @@ ROOT = Path(os.environ.get('LAYOUT_ROOT', Path(__file__).resolve().parents[1]))
 SK = ROOT / 'skeleton'
 TOOLS = os.environ.get('VAULT_TOOLS')
 SOURCE = os.environ.get('SOURCE_VAULT')
-OLD = ['Registry', 'Goals', 'Tasks', 'FleetingNote', 'Clippings', 'Drafts', 'BufferNotes', 'Reading/math']
+OLD = ['Registry', 'Goals', 'Tasks', 'FleetingNote', 'Clippings', 'Drafts', 'BufferNotes', 'Reading/math', 'Reading/DB', 'Reading/art', 'Inbox/FleetingNote', 'Inbox/Clippings',
+       'Resources/AI', 'Resources/サブスク', 'Resources/メール', 'Resources/住居', 'Resources/学校', 'Resources/絵']
 NEW = ['Wiki', 'Zettel', 'Inbox', 'Reading', 'Writing', 'Action', 'Dailies', 'Reviews', 'Resources', 'Originals', 'System', 'Templates', '_scratch', 'attachments', 'references']
 
 
@@ -55,6 +56,31 @@ class Layout(unittest.TestCase):
         home = (SK/'Home.md').read_text()
         for text in ['旧記録', 'ingram-inverse-limits', '人体デッサン', '移行の確認待ち']:
             self.assertNotIn(text, home)
+
+    def assert_current_guide(self, text):
+        for phrase in ['従来の階層構造を維持', '元の同期コピーは当面',
+                       '旧環境から移行した', '移行前のチェック記号', '今回退避された']:
+            self.assertNotIn(phrase, text)
+        self.assertIn('未整理のアイデアやWebクリップを一時保管する。', text)
+        self.assertIn('既存タスクの作成日や開始日などのメタデータはそのまま維持する。', text)
+        self.assertIn('退避データは、利用者が保持期限を決めるまで削除しない。', text)
+
+    def test_shared_guide_starts_from_current_layout(self):
+        self.assert_current_guide((SK/'README.md').read_text())
+
+    def test_export_drops_legacy_layout_assumptions(self):
+        with tempfile.TemporaryDirectory(prefix='vault-sanitize-') as temp:
+            source = Path(temp)/'source'; copy_skeleton(source)
+            # An older source Vault can still contain migration-specific explanations.
+            guide = (source/'README.md').read_text()
+            guide += ('\n既存の素材は従来の階層構造を維持して収容する。\n'
+                      '元の同期コピーは当面の間保持する\n'
+                      'また、旧環境から移行した既存タスクの作成日や開始日などのメタデータはそのまま維持する。\n'
+                      '移行前のチェック記号・本文・日付は履歴行として残してあり、未実施の項目を通常のタスクの未完了として扱わないようにする。\n'
+                      '退避データの保持期限は未定であるため、既存の `attachments/` 側にあるコピーや今回退避されたデータは削除しないこと。\n')
+            (source/'README.md').write_text(guide)
+            run(sys.executable, str(ROOT/'nix/sanitize-skeleton.py'), str(source))
+            self.assert_current_guide((source/'README.md').read_text())
 
     def test_settings_match_dashboard_and_templates(self):
         tasks = json.loads((SK/'.obsidian/plugins/obsidian-tasks-plugin/data.json').read_text())

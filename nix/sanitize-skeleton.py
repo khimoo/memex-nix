@@ -16,6 +16,12 @@ def sanitize(root: Path) -> None:
     ).replace('- `Writing/hello worldが実行されるまで/` の記事を gemini-proofread で校正し終えた → `proofreading-drafts`\n', ''))
 
     def readme(s):
+        # The shared guide describes a fresh Vault, not the owner's migration state.
+        s = s.replace('既存の素材は従来の階層構造を維持して収容する。', '').replace('既存の素材は従来の階層構造を維持して収容する', '')
+        s = s.replace('元の同期コピーは当面の間保持する', '')
+        s = s.replace('また、旧環境から移行した既存タスクの作成日や開始日などのメタデータはそのまま維持する。', '既存タスクの作成日や開始日などのメタデータはそのまま維持する。')
+        s = s.replace('移行前のチェック記号・本文・日付は履歴行として残してあり、未実施の項目を通常のタスクの未完了として扱わないようにする。', '')
+        s = s.replace('退避データの保持期限は未定であるため、既存の `attachments/` 側にあるコピーや今回退避されたデータは削除しないこと。', '退避データは、利用者が保持期限を決めるまで削除しない。')
         s = s.replace('設計の正本は [[System/設計/2026-10-16-vault再設計]]、各ルールの目的と正本は [[System/規則台帳]] を参照すること。',
                       '各ルールの目的と正本は [[System/規則台帳]] を参照すること。')
         s = '\n'.join(line for line in s.split('\n')
