@@ -1,6 +1,6 @@
 {
   "presets": {},
-  "globalQuery": "(NOT(tags include daily)) AND (NOT(tags include sentence_english)) AND (NOT(tags include proof_task)) AND (NOT(tags include 車)) AND (NOT(path includes Reading/)) AND (priority is above lowest)",
+  "globalQuery": "path regex matches /^(Action|Dailies|Reviews)\\//",
   "globalFilter": "",
   "removeGlobalFilter": false,
   "taskFormat": "tasksPluginEmoji",
@@ -11,23 +11,23 @@
   "autoSuggestMinMatch": 0,
   "autoSuggestMaxItems": 20,
   "provideAccessKeys": true,
-  "useFilenameAsScheduledDate": true,
+  "useFilenameAsScheduledDate": false,
   "filenameAsScheduledDateFormat": "",
-  "filenameAsDateFolders": ["Dailies"],
+  "filenameAsDateFolders": [],
   "recurrenceOnNextLine": false,
   "removeScheduledDateOnRecurrence": false,
   "statusSettings": {
     "coreStatuses": [
       {
         "symbol": " ",
-        "name": "Todo",
+        "name": "やる",
         "nextStatusSymbol": "x",
         "availableAsCommand": true,
         "type": "TODO"
       },
       {
         "symbol": "x",
-        "name": "Done",
+        "name": "済み",
         "nextStatusSymbol": " ",
         "availableAsCommand": true,
         "type": "DONE"
@@ -36,14 +36,28 @@
     "customStatuses": [
       {
         "symbol": "/",
-        "name": "In Progress",
+        "name": "やっている",
         "nextStatusSymbol": "x",
         "availableAsCommand": true,
         "type": "IN_PROGRESS"
       },
       {
+        "symbol": "w",
+        "name": "待ち",
+        "nextStatusSymbol": " ",
+        "availableAsCommand": true,
+        "type": "ON_HOLD"
+      },
+      {
+        "symbol": "s",
+        "name": "いつか",
+        "nextStatusSymbol": " ",
+        "availableAsCommand": true,
+        "type": "ON_HOLD"
+      },
+      {
         "symbol": "-",
-        "name": "Cancelled",
+        "name": "やめた",
         "nextStatusSymbol": " ",
         "availableAsCommand": true,
         "type": "CANCELLED"

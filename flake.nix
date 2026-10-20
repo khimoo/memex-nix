@@ -61,6 +61,24 @@
         obsidian = obsidianFor system;
       });
 
+      checks = forAllSystems (system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+          tools = pkgs.symlinkJoin {
+            name = "vault-layout-test-tools";
+            paths = [ (seedVaultFor system) (mirrorVaultFor system) (initVaultFor system) ];
+          };
+        in {
+          layout = pkgs.runCommand "vault-layout-tests" {
+            nativeBuildInputs = [ pkgs.python3 pkgs.git ];
+          } ''
+            export LAYOUT_ROOT=${self}
+            export VAULT_TOOLS=${tools}/bin
+            python3 ${./tests/test_layout.py} -v
+            touch $out
+          '';
+        });
+
       formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.nixpkgs-fmt);
     };
 }

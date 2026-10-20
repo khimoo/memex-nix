@@ -1,0 +1,12 @@
+views:
+  - type: table
+    name: 未処理
+    filters:
+      and:
+        - file.inFolder("Inbox")
+    order:
+      - file.name
+      - file.ctime
+    sort:
+      - property: file.ctime
+        direction: ASC

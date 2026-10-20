@@ -1,0 +1,25 @@
+views:
+  - type: table
+    name: 更新期限
+    filters:
+      and:
+        - file.inFolder("Resources")
+        - or:
+            - 'note.renew < today() + "61d"'
+            - 'note.due < today() + "61d"'
+    order:
+      - file.name
+      - note.renew
+      - note.due
+      - note.confirmed
+  - type: table
+    name: 確認が古い
+    filters:
+      and:
+        - file.inFolder("Resources")
+        - or:
+            - 'note.confirmed.isEmpty()'
+            - 'note.confirmed < today() - "1y"'
+    order:
+      - file.name
+      - note.confirmed

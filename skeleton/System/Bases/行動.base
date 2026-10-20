@@ -1,0 +1,43 @@
+formulas:
+  focus_or_default: 'if(note.focus, note.focus, "維持")'
+views:
+  - type: table
+    name: ゴール
+    filters:
+      and:
+        - file.inFolder("Action")
+        - 'note.kind == "goal"'
+    groupBy:
+      property: formula.focus_or_default
+      direction: ASC
+    order:
+      - file.name
+      - note.status
+      - formula.focus_or_default
+  - type: table
+    name: 進行中の活動
+    filters:
+      and:
+        - file.inFolder("Action")
+        - 'note.kind == "project"'
+        - 'note.status == "active"'
+    order:
+      - file.name
+      - note.goal
+      - note.due
+  - type: table
+    name: 状態未設定
+    filters:
+      and:
+        - 'note.status.isEmpty()'
+        - or:
+            - file.inFolder("Action")
+            - and:
+                - file.inFolder("Reading")
+                - 'file.name == "index"'
+                - 'file.folder.split("/").length == 2'
+            - and:
+                - file.inFolder("Writing")
+                - 'file.name == "index"'
+    order:
+      - file.path

@@ -64,6 +64,8 @@ pkgs.writeShellApplication {
     /.obsidian/workspace-mobile.json
     /attachments/
     /references/
+    /Originals/
+    /_scratch/
     /.claudian/sessions/
     /.obsidian/plugins/realclaudian/data.json
     EOF

@@ -1,0 +1,32 @@
+views:
+  - type: table
+    name: 再調査
+    filters:
+      and:
+        - or:
+            - file.inFolder("Wiki")
+            - file.inFolder("Zettel")
+        - '!note.review.isEmpty()'
+    order:
+      - file.name
+      - note.review
+      - note.ai_generated
+  - type: table
+    name: AI が書いたまま
+    filters:
+      and:
+        - '!note.ai_generated.isEmpty()'
+        - '!file.inFolder("Reading")'
+    order:
+      - file.name
+      - note.ai_generated
+      - note.review
+  - type: table
+    name: 読書の AI 記録
+    filters:
+      and:
+        - '!note.ai_generated.isEmpty()'
+        - file.inFolder("Reading")
+    order:
+      - file.name
+      - note.ai_generated

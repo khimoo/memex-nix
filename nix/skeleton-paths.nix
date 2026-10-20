@@ -1,59 +1,68 @@
-# 配布する vault の骨格。vault からの相対パスで列挙する。
-#
-# 使うのは mirror-vault だけ。seed-vault は skeleton/ の木をそのまま歩くので、この列挙を
-# 参照しない(列挙が2箇所にあると必ずずれる)。skeleton/ は成果物で、ここはその作り方。
-#
-# denylist ではなく allowlist にしているのは、vault が tracked にしているものの大半
-# (Zettel/ Dailies/ Goals/ …)が個人のノートで、足し忘れが「漏れる」方向に倒れるため。
-# 配ると決めたものを列挙する側に倒す。
-#
-# .obsidian はここに含めない。あちらは `git ls-files .obsidian` の全 tracked から denylist を
-# 引く別系統で、Obsidian が勝手に増やすファイルを追随する必要があるため。
+# 配布する共有ファイルと空の置き場。個人のノートと権限設定は含めない。
+# mirror-vault はこの allowlist から構成し、配布時に個人用の参照・履歴を除く。
 {
-  # 中身ごと配るファイル。vault に無ければ mirror は中止する(黙って落とすと repo から消える)。
   files = [
-    "README.md"
-    "IndexNote.md"
+    "AGENTS.md"
     "CLAUDE.md"
-
+    "README.md"
+    "Home.md"
+    "System/規則台帳.md"
+    "System/失敗記録.md"
+    "System/参照/Typst記法.md"
+    "System/参照/学習支援.md"
+    "System/参照/Jazz一次資料.md"
     "Templates/TemplateDailyJournal.md"
     "Templates/TemplateWeeklyReview.md"
     "Templates/TemplateMonthly.md"
     "Templates/TemplateResource.md"
-
-    # 各フォルダの規約ノート。README は「どこに何があるか」までしか持たず、細目はこちらにある。
-    "Tasks/タスク運用ルール.md"
     "Resources/README.md"
-    "Reading/Reading運用ルール.md"
-    "Reading/math/数学書精読ルール.md"
-
-    # dataview クエリと運用ルールだけで、個人の内容を持たない。
-    "Registry/AI下書き一覧.md"
-
-    ".claude/skills/lint-zettel/SKILL.md"
+    "System/Bases/行動.base"
+    "System/Bases/再調査.base"
+    "System/Bases/未処理.base"
+    "System/Bases/実務.base"
+    ".agents/skills/db-predict-measure/SKILL.md"
+    ".agents/skills/db-predict-measure/references/観測ノートの型.md"
+    ".agents/skills/editing-knowledge/SKILL.md"
+    ".agents/skills/editing-knowledge/references/判定の例.md"
+    ".agents/skills/jazz-mentor/SKILL.md"
+    ".agents/skills/lint-zettel/SKILL.md"
+    ".agents/skills/reading-math-closely/SKILL.md"
+    ".agents/skills/reading-math-closely/references/アウトラインの例.md"
+    ".agents/skills/reading-math-closely/references/ファイル構成.md"
+    ".agents/skills/restructuring-vault/SKILL.md"
+    ".agents/skills/restructuring-vault/agents/openai.yaml"
+    ".agents/skills/reviewing-actions/SKILL.md"
+    ".agents/skills/revising-instructions/SKILL.md"
+    ".agents/skills/revising-instructions/agents/openai.yaml"
+    ".agents/skills/score-image-to-musicxml/SKILL.md"
+    ".agents/skills/transcribe-handwritten-note/SKILL.md"
+    ".agents/skills/transpose-12keys/SKILL.md"
+    ".agents/skills/updating-records/SKILL.md"
+    ".agents/skills/updating-records/references/構造.md"
   ];
 
-  # 空で配るフォルダ(.gitkeep で git に載せる)。中身は各自のノートなので運ばない。
-  # attachments と references は同期ジョブの ConditionPathIsDirectory が要求するため、
-  # 空でも存在させる必要がある。
   dirs = [
+    "Wiki"
     "Zettel"
-    "Registry"
-    "FleetingNote"
-    "FleetingNote/未分類"
+    "Inbox"
     "Reading"
-    "Reading/math"
-    "BufferNotes"
-    "Drafts"
+    "Writing"
+    "Action"
     "Dailies"
     "Reviews"
-    "Goals"
-    "Tasks"
-    "Tasks/archive"
-    "Clippings"
     "Resources"
-    "Templates"
+    "Originals"
     "attachments"
     "references"
+    "Templates"
+    "System"
+    "System/設計"
+    "System/計画"
+    "System/Bases"
+    "System/参照"
+    "_scratch"
   ];
+
+  # スキル本文は .agents の一か所に置き、Claude も同じものを読む。
+  links = { ".claude/skills" = "../.agents/skills"; };
 }

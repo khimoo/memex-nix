@@ -16,7 +16,7 @@
 #     token を持つ data.json はそこで除外済み)、2段目がこの層。
 #
 #   骨格(分類フォルダ・運用ドキュメント) … allowlist(nix/skeleton-paths.nix)。vault が tracked に
-#     しているものの大半は個人のノート(Zettel/ Dailies/ Goals/ …)なので、全 tracked を写すと
+#     しているものの大半は個人のノート(Wiki/ Zettel/ Dailies/ Action/ …)なので、全 tracked を写すと
 #     private が public へ流れ込む。足し忘れが「漏れる」方向に倒れるので、配ると決めたものを
 #     列挙する側に倒す。列挙のどれかが vault に無ければ中止する——黙って落とすと、直後の
 #     rsync --delete が repo 側からも消してしまう。
@@ -34,7 +34,7 @@
 
 pkgs.writeShellApplication {
   name = "mirror-vault";
-  runtimeInputs = [ pkgs.coreutils pkgs.git pkgs.rsync pkgs.jq ];
+  runtimeInputs = [ pkgs.coreutils pkgs.git pkgs.rsync pkgs.jq pkgs.python3 ];
   text = ''
     err() { echo "mirror-vault: $*" >&2; }
 
@@ -147,6 +147,15 @@ pkgs.writeShellApplication {
       exit 1
     fi
     ( cd "$vault" && cp --parents -p -- "''${files[@]}" "$tmp/" )
+
+    # 配布元固有のリンクと履歴を落とす。元の vault は変更しない。
+    python3 ${./sanitize-skeleton.py} "$tmp"
+
+    # Claude も .agents の正本を読む。コピーで二つの本文を作らない。
+    ${pkgs.lib.concatStringsSep "\n" (pkgs.lib.mapAttrsToList (name: target: ''
+      mkdir -p "$tmp/$(dirname ${pkgs.lib.escapeShellArg name})"
+      ln -s ${pkgs.lib.escapeShellArg target} "$tmp/"${pkgs.lib.escapeShellArg name}
+    '') skeletonPaths.links)}
 
     # 空フォルダは git に載らないので .gitkeep で保持する。中身は各自のノートなので運ばない。
     dirs=(${pkgs.lib.escapeShellArgs skeletonPaths.dirs})

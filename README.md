@@ -96,7 +96,7 @@ nix run home-manager/release-25.11 -- switch
 
 この switch が、vault フォルダの用意（`initializeVault = true` のとき。作成・`git init`・
 `.gitignore`）と、骨格の配置——分類フォルダ・運用ドキュメント・`.obsidian` 設定——まで済ませる。
-どれも既にあるものは触らない。
+どれも既にあるものは触らない。骨格の自動配置も `initializeVault = true` のときだけ行う。
 
 ### 4. `zettelkasten-setup` を実行する
 
@@ -117,7 +117,8 @@ zettelkasten-setup
 - Claude を使うプラグインを動かすなら、一度 `claude` を実行してログインする。
 
 2台目以降は、`initializeVault` を `false` にしたうえで vault を clone してから 3→4 をやる
-（先に空フォルダを作ると clone が失敗するため）。
+（先に空フォルダを作ると clone が失敗するため）。この場合、骨格は再配置しないので、
+Vault 側で削除した分類フォルダや運用ドキュメントも復活しない。
 
 ## 設定できること
 
@@ -127,7 +128,7 @@ zettelkasten-setup
 |---|---|---|
 | `enable` | `false` | モジュール全体の on/off |
 | `vaultDir` | （必須） | vault の絶対パス。直下の `attachments/` と `references/` が同期対象 |
-| `initializeVault` | `false` | vault フォルダを switch が用意する（作成・`git init`・`.gitignore`）。別経路で clone するなら `false` のまま |
+| `initializeVault` | `false` | vault フォルダと骨格を switch が用意する（作成・`git init`・`.gitignore`・分類フォルダ等）。別経路で clone するなら `false` のまま |
 | `rcloneRemote` | `"gdrive"` | 同期先の rclone remote 名 |
 | `attachments.enable` | `true` | 添付フォルダの Google Drive 双方向同期 |
 | `attachments.folder` | `"zettelkasten-attachments"` | Drive 側のフォルダ名 |
@@ -135,7 +136,7 @@ zettelkasten-setup
 | `papis.enable` | `false` | papis 本体・設定・`references/` の同期 |
 | `papis.folder` | `"papis-library"` | Drive 側のフォルダ名 |
 | `papis.opentool` | `"xdg-open"` | `papis open` が使うビューア |
-| `obsidian.enable` | `false` | Obsidian 本体と `.obsidian` 設定の配置 |
+| `obsidian.enable` | `false` | Obsidian 本体の導入。`initializeVault = true` のときは `.obsidian` 設定も配置 |
 | `obsidian.installPackage` | `obsidian.enable` | Obsidian 本体を入れるか（別経路で入れているなら `false`） |
 | `mirrorRepo` | `null` | `mirror-vault` の出力先（骨格を配る側だけが使う） |
 | `after` / `wants` | `[]` | 同期サービスの起動順序の依存 |
@@ -209,11 +210,27 @@ resyncでは通常競合の両版保存と挙動が違うため、dry-runだけ�
 2 種類——`.obsidian/`（Obsidian 設定と community plugin 本体）と、ノートの分類フォルダ・
 運用ドキュメント。ノート本文は入っていない。
 
-- `seed-vault` — 骨格を vault へ非破壊コピーする。home-manager の activation が呼ぶ
+- `seed-vault` — 骨格を vault へ非破壊コピーする。`initializeVault = true` のときだけ home-manager の activation が呼ぶ
   （`.obsidian` は `obsidian.enable` のときだけ）。
 - `mirror-vault` — 逆向き。vault の骨格を config repo の `skeleton/` へ写して commit する
   （`--dry-run` / `--push` あり）。live な source-of-truth は vault（`obsidian-git` が同期している）で、
   この repo はそこからの派生スナップショット。`mirrorRepo` を設定すると PATH に載る。
+
+### 配布する新構成
+
+入口は `Home.md`。知識は `Wiki/` と `Zettel/`、未処理は `Inbox/`、行動は `Action/`、
+原稿は `Writing/`、資料ごとの読書は `Reading/<citekey>/` に置く。
+`System/Bases/` と `Templates/` は Home・日次・週次・月次の一覧を支える。
+`Originals/` と `_scratch/` は作るが、中身は Git 管理とミラーの対象外にする。
+旧 `Tasks/`、`Goals/`、`Registry/` 等は新規作成しない。
+
+共有指示は `AGENTS.md`、スキルは `.agents/skills/` が正本。`CLAUDE.md` は `@AGENTS.md` を読み、
+`.claude/skills` は `../.agents/skills` への相対リンクになる。端末固有の `.claude/settings.json` と
+`.codex/config.toml` は配らない。個別原稿用の校正スキルと、資料の特定節だけの取り決めも含めない。
+
+ミラーでは Home の個人用リンク、移行案内、配布元の失敗履歴・規則の履歴列を除く。
+この処理は `nix/sanitize-skeleton.py` にまとめ、再ミラーでも同じ境界を保つ。
+`System/失敗記録.md` は配布先で記録するための空の案内にする。
 
 ### seed の粒度は 2 つ
 
@@ -242,7 +259,7 @@ resyncでは通常競合の両版保存と挙動が違うため、dry-runだけ�
   取り直すので、受け取り側の手作業は増えない（初回だけダウンロードが走る）。
 - **`obsidian-git` の `autoPullOnBoot`** — remote を持たない vault では起動ごとに git のエラー通知が出るため。
 
-骨格の方は逆で、vault が tracked にしているものの大半（`Zettel/` `Dailies/` `Goals/` …）が個人の
+骨格の方は逆で、vault が tracked にしているものの大半（`Wiki/` `Zettel/` `Dailies/` `Action/` …）が個人の
 ノート。全 tracked を写すと private が public へ流れ込むので、配ると決めたものを
 `nix/skeleton-paths.nix` に列挙する。足し忘れは「配り漏れ」で済み、漏洩にはならない。
 列挙したファイルが vault に無ければ `mirror-vault` は中止する——黙って落とすと、直後の
@@ -254,7 +271,7 @@ resyncでは通常競合の両版保存と挙動が違うため、dry-runだけ�
 ### いつ mirror するか
 
 **新しいマシンを立てるときではない。** ノートの private repo を clone する運用なら、その clone が
-骨格を連れてくるので `seed-vault` は何も置かない（既存を上書きしない設計）。
+骨格を連れてくるので、`initializeVault = false` のままにして `seed-vault` を実行しない。
 このスナップショットが効くのは骨格を持たない vault——`initializeVault = true` で
 ゼロから始める環境である。
 
@@ -269,3 +286,14 @@ resyncでは通常競合の両版保存と挙動が違うため、dry-runだけ�
 
 この repo は rclone の認証情報を持たない。各マシンで `rclone config` が作った
 `~/.config/rclone/rclone.conf` を、rclone 自身が既定で解決する。
+
+## 配布物の検証
+
+```sh
+nix flake check
+```
+
+新旧ディレクトリ、Tasks/Journals設定、共有指示のリンク、新規Vaultへの配置、個人の内容の除外、
+必須ファイル欠落時にミラー先を変更しないことを検証する。
+現在のVaultとの一致も確かめる場合は、`tests/test_layout.py` の `SOURCE_VAULT` と
+`VAULT_TOOLS` を指定して実行する。テストは一時Vaultを使い、commit・push は行わない。

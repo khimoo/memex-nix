@@ -60,12 +60,12 @@ pkgs.writeShellApplication {
     while IFS= read -r -d "" rel; do
       case "$rel" in .obsidian/*) continue ;; esac
       dest="$vault/$rel"
-      if [ -e "$dest" ]; then continue; fi
+      if [ -e "$dest" ] || [ -L "$dest" ]; then continue; fi
       mkdir -p "$(dirname "$dest")"
-      cp "$src/$rel" "$dest"
-      chmod u+w "$dest"
+      cp -P "$src/$rel" "$dest"
+      if [ ! -L "$dest" ]; then chmod u+w "$dest"; fi
       placed=$((placed + 1))
-    done < <(cd "$src" && find . -type f -printf '%P\0')
+    done < <(cd "$src" && find . \( -type f -o -type l \) -printf '%P\0')
 
     if [ "$placed" -gt 0 ]; then
       echo "seed-vault: 骨格を $placed 件配置しました: $vault" >&2

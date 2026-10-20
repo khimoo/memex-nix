@@ -1,39 +1,20 @@
 ---
-type: monthly-review
-period: "{{date:YYYY-MM}}"
-start: "{{start_date:YYYY-MM-DD}}"
-end: "{{end_date:YYYY-MM-DD}}"
+reviewed: false
 ---
 
-```journal-nav
+# 月次の振り返り
+
+## ゴールの成果目標と行動の目安
+
+![[System/Bases/行動.base#ゴール]]
+
+成果目標と実際の行動を見て、来月の目安と配分を記録する。
+
+## いつか
+
+```tasks
+filter by function task.status.symbol === 's'
+group by filename
 ```
 
-# {{date:YYYY-MM}} 月次レビュー
-
-## 各ゴールの状態（1行）
-- [[数学セミナー]]:
-- [[ゲーム制作]]:
-- [[ピアノ・ジャズ]]:
-- [[Zettelkasten整備]]:
-
-## 今月の主役（WIP 1〜2ゴール）と脇役（維持のみ）
-- 主役（wip中）: 
-- 維持: 
-- （※月次では決め直さない。主役の切替は Goals の wip フラグで随時。重点配分は週次で）
-
-## 各ゴールの今月フォーカス（lag に近づく一歩）
-- [[数学セミナー]]:
-- [[ゲーム制作]]:
-- [[ピアノ・ジャズ]]:
-- [[Zettelkasten整備]]:
-
-## 今月の週次レビュー
-```dataview
-LIST
-FROM "Reviews"
-WHERE type = "weekly-review" AND start >= "{{start_date:YYYY-MM-DD}}" AND start <= "{{end_date:YYYY-MM-DD}}"
-SORT start ASC
-```
-
-## 来月へ
-- 
+## 来月の配分

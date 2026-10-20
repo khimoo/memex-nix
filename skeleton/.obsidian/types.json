@@ -23,6 +23,22 @@
     "TQ_show_tags": "checkbox",
     "TQ_show_task_count": "checkbox",
     "TQ_show_tree": "checkbox",
-    "TQ_show_urgency": "checkbox"
+    "TQ_show_urgency": "checkbox",
+    "ai_generated": "date",
+    "review": "text",
+    "kind": "text",
+    "status": "text",
+    "focus": "text",
+    "goal": "multitext",
+    "prereq": "multitext",
+    "due": "date",
+    "renew": "date",
+    "confirmed": "date",
+    "evidence": "multitext",
+    "reviewed": "checkbox",
+    "transcribed_from": "multitext",
+    "transcription_checked": "date",
+    "citekey": "text",
+    "TQ_show_toolbar": "checkbox"
   }
 }

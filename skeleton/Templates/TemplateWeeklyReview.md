@@ -1,36 +1,38 @@
 ---
-type: weekly-review
-period: "{{date:GGGG-[W]WW}}"
+reviewed: false
+period: "{{date:gggg-[W]ww}}"
 start: "{{start_date:YYYY-MM-DD}}"
 end: "{{end_date:YYYY-MM-DD}}"
 ---
 
-```journal-nav
-```
+## 前週の完了と中止
 
-## 4ゴールの状態（各1行）
-- [[数学セミナー]]:
-- [[ゲーム制作]]:
-- [[ピアノ・ジャズ]]:
-- [[Zettelkasten整備]]:
+- 完了：
+- 中止：
 
-## 今週のDaily（自動集約）
-```dataview
-LIST
-FROM "Dailies"
-WHERE file.day >= date("{{start_date:YYYY-MM-DD}}") AND file.day <= date("{{end_date:YYYY-MM-DD}}")
-SORT file.day ASC
-```
+## 習慣の集計
 
-## 実行率（leadベース）
-| ゴール | lead指標 | 週の目標 | 実績 |
+## 注力ゴールの予定と実際の行動量
+
+![[System/Bases/行動.base#ゴール]]
+
+| ゴール | 予定した行動量 | 実際の行動量 | 振り返り |
 | --- | --- | --- | --- |
-| 数学セミナー |  |  |  |
-| ゲーム制作 |  |  |  |
-| ピアノ・ジャズ |  |  |  |
-| Zettelkasten整備 |  |  |  |
+|  |  |  |  |
 
-## 今週の主役（WIP 1〜2個）と最も効く一手
+## 待ちの見直し
 
-## 翌週のタイムブロック案
-- 
+| 待っていること | 現状 | 次の対応 |
+| --- | --- | --- |
+|  |  |  |
+
+## 今週の配分
+
+| ゴール・活動 | 配分・行動量の目安 |
+| --- | --- |
+|  |  |
+
+## Inboxの処理
+
+- 処理したもの・行き先：
+- 残したもの・次の対応：

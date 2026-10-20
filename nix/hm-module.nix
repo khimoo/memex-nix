@@ -124,7 +124,7 @@ in
       default = false;
       description = ''
         vault フォルダを用意する(作成・git init・.gitignore の生成)。無ければ作るだけで、
-        既にあるものは触らない。
+        既にあるものは触らない。骨格の自動配置もこのオプションが有効なときだけ行う。
 
         既定は無効で、vault の存在は利用側の責務。ゼロから始める環境(配布先)だけ有効にする。
         既に別の経路で vault を用意している環境——ノートの private repo を clone する等——で
@@ -235,7 +235,7 @@ in
         default = false;
         description = ''
           Obsidian 本体を入れ、vault に .obsidian 設定(Obsidian 設定 + community plugin 本体)を
-          seed-once で配置する。vaultDir/.obsidian が無いときだけ store の baseline をコピーし、
+          initializeVault が有効なときに配置する。vaultDir/.obsidian が無いときだけ store の baseline をコピーし、
           既存の live 設定は触らない(非破壊)。以降の Obsidian 上の変更は local のみ。
         '';
       };
@@ -342,11 +342,10 @@ in
       };
     })
 
-    # 骨格は Obsidian の有無に関わらず配る(vault の中身であって Obsidian の設定ではない)。
+    # 骨格は initializeVault が有効な環境だけに配る。
+    # clone で用意する既存 vault では、削除済みのファイルを switch のたびに復元しない。
     # .obsidian だけは obsidian.enable のときに --obsidian で足す。
-    # zettelkastenVault が無い構成(initializeVault = false)でも、存在しない entry 名は
-    # 依存として無視されるだけなので、そのまま書ける。
-    (lib.mkIf cfg.enable {
+    (lib.mkIf (cfg.enable && cfg.initializeVault) {
       home.activation.seedVault = lib.hm.dag.entryAfter [ "linkGeneration" "zettelkastenVault" ] ''
         $DRY_RUN_CMD ${lib.getExe seedVault} ${lib.optionalString cfg.obsidian.enable "--obsidian "}${lib.escapeShellArg cfg.vaultDir}
       '';
