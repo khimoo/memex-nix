@@ -5,7 +5,7 @@
 #   - .obsidian … ディレクトリ単位。既にあれば丸ごと触らない。Obsidian 自身が常時書き換える
 #     自己整合的な状態なので、ファイル単位で差し込むと利用者が無効化したプラグインを
 #     community-plugins.json 経由で復活させる事故が起きる。--obsidian が無ければ配置しない。
-#   - それ以外 … ファイル単位。「CLAUDE.md だけ既にある」「Templates/ は空」が普通に起きるため、
+#   - それ以外 … ファイル単位。「CLAUDE.md だけ既にある」「System/Templates/ は空」が普通に起きるため、
 #     無いものだけを置く。
 #
 # vault ディレクトリ自体が無ければ warning を出して skip する(まだノート repo を clone して

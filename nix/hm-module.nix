@@ -8,7 +8,7 @@
 # rclone 認証情報はこのモジュールの管轄外。各マシンで `rclone config` が作った
 # ~/.config/rclone/rclone.conf を rclone 自身が既定で解決する。
 #
-# vault 内のパスは規約で固定する(attachments/ と references/)。可変にすると、配布する
+# vault 内のパスは規約で固定する(Assets/attachments/ と Assets/references/)。可変にすると、配布する
 # .obsidian/app.json の attachmentFolderPath と食い違いうるため。設定項目にする利益が無い。
 #
 # Obsidian と claude-code は unfree なので、利用側が nixpkgs.config.allowUnfree を許可する
@@ -20,9 +20,9 @@ let
   cfg = config.services.zettelkasten;
 
   # 同期対象のパスは規約で固定(options にしない)。
-  attachmentsDir = "${cfg.vaultDir}/attachments";
-  papisDir = "${cfg.vaultDir}/references";
-  originalsDir = "${cfg.vaultDir}/Originals";
+  attachmentsDir = "${cfg.vaultDir}/Assets/attachments";
+  papisDir = "${cfg.vaultDir}/Assets/references";
+  originalsDir = "${cfg.vaultDir}/Assets/Originals";
 
   anySync = cfg.attachments.enable || cfg.papis.enable || cfg.originals.enable;
 
@@ -114,7 +114,7 @@ in
       example = "/home/alice/zettelkasten";
       description = ''
         vault(Obsidian のノートを置くフォルダ)の絶対パス。
-        直下の attachments/、references/、Originals/ を設定に応じて同期する。
+        Assets/attachments/、Assets/references/、Assets/Originals/ を設定に応じて同期する。
         これがマシン固有の唯一の必須設定。
       '';
     };
@@ -159,7 +159,7 @@ in
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "vault 直下 attachments/ の Google Drive 双方向同期を有効化する。";
+        description = "vault の Assets/attachments/ の Google Drive 双方向同期を有効化する。";
       };
 
       folder = lib.mkOption {
@@ -179,7 +179,7 @@ in
       enable = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "papis(参照文献マネージャ)本体・設定・vault 直下 references/ の同期を有効化する。";
+        description = "papis(参照文献マネージャ)本体・設定・vault の Assets/references/ の同期を有効化する。";
       };
 
       folder = lib.mkOption {
@@ -202,7 +202,7 @@ in
     };
 
     originals = {
-      enable = lib.mkEnableOption "vault 直下 Originals/ の Google Drive 双方向同期";
+      enable = lib.mkEnableOption "vault の Assets/Originals/ の Google Drive 双方向同期";
 
       folder = lib.mkOption {
         type = lib.types.str;

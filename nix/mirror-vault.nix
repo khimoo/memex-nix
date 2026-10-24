@@ -16,7 +16,7 @@
 #     token を持つ data.json はそこで除外済み)、2段目がこの層。
 #
 #   骨格(分類フォルダ・運用ドキュメント) … allowlist(nix/skeleton-paths.nix)。vault が tracked に
-#     しているものの大半は個人のノート(Wiki/ Zettel/ Dailies/ Action/ …)なので、全 tracked を写すと
+#     しているものの大半は個人のノート(Knowledge/Wiki/ Knowledge/Zettel/ LifeLogs/Dailies/ LifeState/Action/ …)なので、全 tracked を写すと
 #     private が public へ流れ込む。足し忘れが「漏れる」方向に倒れるので、配ると決めたものを
 #     列挙する側に倒す。列挙のどれかが vault に無ければ中止する——黙って落とすと、直後の
 #     rsync --delete が repo 側からも消してしまう。

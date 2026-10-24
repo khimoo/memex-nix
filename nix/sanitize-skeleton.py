@@ -36,7 +36,9 @@ def sanitize(root: Path) -> None:
         return s
 
     edit('README.md', readme)
-    (root / 'Resources/README.md').write_text('# Resources — 実務リファレンス\n\n契約、履修、家電などの実務の事実を、一つの対象につき1ノートで記録する。\n主題別のサブフォルダは作らず、検索とプロパティで引く。\n\n## frontmatter の目安\n\n```yaml\n---\nconfirmed:\nevidence: []\nrenew:\ndue:\n---\n```\n\n未確認の `confirmed` は空欄にする。確認日と根拠は `confirmed` と `evidence`、更新期限は\n`renew` と `due` に記録する。変更日、旧値から新値、根拠は本文の「履歴」に残す。\n\n資料の配置、Git管理、本文での表示は別々に判断する。\n詳しい手順は `.agents/skills/updating-records/SKILL.md`、構造は\n`.agents/skills/updating-records/references/構造.md` を参照する。\n')
+    # The vault no longer keeps this README, so the skeleton always gets the fixed text.
+    (root / 'LifeState/Admin').mkdir(parents=True, exist_ok=True)
+    (root / 'LifeState/Admin/README.md').write_text('# Resources — 実務リファレンス\n\n契約、履修、家電などの実務の事実を、一つの対象につき1ノートで記録する。\n主題別のサブフォルダは作らず、検索とプロパティで引く。\n\n## frontmatter の目安\n\n```yaml\n---\nconfirmed:\nevidence: []\nrenew:\ndue:\n---\n```\n\n未確認の `confirmed` は空欄にする。確認日と根拠は `confirmed` と `evidence`、更新期限は\n`renew` と `due` に記録する。変更日、旧値から新値、根拠は本文の「履歴」に残す。\n\n資料の配置、Git管理、本文での表示は別々に判断する。\n詳しい手順は `.agents/skills/updating-records/SKILL.md`、構造は\n`.agents/skills/updating-records/references/構造.md` を参照する。\n')
 
     edit('System/参照/Typst記法.md', lambda s: '\n'.join(
         line for line in s.split('\n')

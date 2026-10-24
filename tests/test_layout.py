@@ -14,8 +14,9 @@ SK = ROOT / 'skeleton'
 TOOLS = os.environ.get('VAULT_TOOLS')
 SOURCE = os.environ.get('SOURCE_VAULT')
 OLD = ['Registry', 'Goals', 'Tasks', 'FleetingNote', 'Clippings', 'Drafts', 'BufferNotes', 'Reading/math', 'Reading/DB', 'Reading/art', 'Inbox/FleetingNote', 'Inbox/Clippings',
-       'Resources/AI', 'Resources/サブスク', 'Resources/メール', 'Resources/住居', 'Resources/学校', 'Resources/絵']
-NEW = ['Wiki', 'Zettel', 'Inbox', 'Reading', 'Writing', 'Action', 'Dailies', 'Reviews', 'Resources', 'Originals', 'System', 'Templates', '_scratch', 'attachments', 'references']
+       'Resources/AI', 'Resources/サブスク', 'Resources/メール', 'Resources/住居', 'Resources/学校', 'Resources/絵',
+       'Wiki', 'Zettel', 'Reading', 'Writing', 'Action', 'Dailies', 'Reviews', 'Resources', 'Templates', 'Originals', 'attachments', 'references']
+NEW = ['Knowledge', 'Knowledge/Wiki', 'Knowledge/Zettel', 'Knowledge/Reading', 'Knowledge/Writing', 'Inbox', 'LifeLogs', 'LifeLogs/Dailies', 'LifeLogs/Reviews', 'LifeLogs/Sessions', 'LifeState', 'LifeState/Action', 'LifeState/Admin', 'Assets', 'Assets/attachments', 'Assets/references', 'Assets/Originals', 'System', 'System/Templates', 'System/設計', 'System/計画', 'System/Bases', 'System/参照', '_scratch']
 
 
 def run(*args, check=True):
@@ -84,7 +85,7 @@ class Layout(unittest.TestCase):
 
     def test_settings_match_dashboard_and_templates(self):
         tasks = json.loads((SK/'.obsidian/plugins/obsidian-tasks-plugin/data.json').read_text())
-        self.assertEqual(tasks['globalQuery'], r'path regex matches /^(Action|Dailies|Reviews)\//')
+        self.assertEqual(tasks['globalQuery'], r'path regex matches /^(LifeState\/Action|LifeLogs\/(Dailies|Reviews))\//')
         self.assertFalse(tasks['useFilenameAsScheduledDate'])
         self.assertEqual(tasks['filenameAsDateFolders'], [])
         statuses = tasks['statusSettings']['coreStatuses'] + tasks['statusSettings']['customStatuses']
@@ -123,7 +124,7 @@ class Layout(unittest.TestCase):
                 self.assertTrue((vault/name).is_dir(), name)
             for name in OLD:
                 self.assertFalse((vault/name).exists(), name)
-            for name in ['Originals/source.pdf', '_scratch/output.txt']:
+            for name in ['Assets/Originals/source.pdf', '_scratch/output.txt']:
                 self.assertEqual(run('git', '-C', str(vault), 'check-ignore', name).returncode, 0)
             (vault/'Home.md').write_text('user content\n')
             (vault/'.obsidian/app.json').write_text('{"user": true}\n')
@@ -153,12 +154,12 @@ class Layout(unittest.TestCase):
             source, dest = Path(temp)/'source', Path(temp)/'dest'
             copy_skeleton(source)
             dest.mkdir(); shutil.copytree(SK, dest/'skeleton', symlinks=True)
-            for name in ['Wiki/PRIVATE.md', 'Action/PRIVATE.md', 'Originals/PRIVATE.pdf',
+            for name in ['Knowledge/Wiki/PRIVATE.md', 'LifeState/Action/PRIVATE.md', 'Assets/Originals/PRIVATE.pdf',
                          '.claude/settings.json', '.codex/config.toml']:
                 path = source/name; path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text('PRIVATE_CONTENT_DO_NOT_DISTRIBUTE')
             with (source/'Home.md').open('a') as handle:
-                handle.write('\n## 旧記録/移行確認\n[[Wiki/PRIVATE]]\n')
+                handle.write('\n## 旧記録/移行確認\n[[Knowledge/Wiki/PRIVATE]]\n')
             (source/'System/失敗記録.md').write_text('PRIVATE_FAILURE_HISTORY')
             path = source/'AGENTS.md'
             path.write_text(path.read_text().replace('## 常に守ること',

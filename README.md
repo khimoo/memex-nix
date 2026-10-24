@@ -127,13 +127,13 @@ Vault 側で削除した分類フォルダや運用ドキュメントも復活�
 | option | 既定 | |
 |---|---|---|
 | `enable` | `false` | モジュール全体の on/off |
-| `vaultDir` | （必須） | vault の絶対パス。直下の `attachments/` と `references/` が同期対象 |
+| `vaultDir` | （必須） | vault の絶対パス。`Assets/attachments/` と `Assets/references/` が同期対象 |
 | `initializeVault` | `false` | vault フォルダと骨格を switch が用意する（作成・`git init`・`.gitignore`・分類フォルダ等）。別経路で clone するなら `false` のまま |
 | `rcloneRemote` | `"gdrive"` | 同期先の rclone remote 名 |
 | `attachments.enable` | `true` | 添付フォルダの Google Drive 双方向同期 |
 | `attachments.folder` | `"zettelkasten-attachments"` | Drive 側のフォルダ名 |
 | `attachments.intervalSeconds` | `900` | 定期同期の間隔 |
-| `papis.enable` | `false` | papis 本体・設定・`references/` の同期 |
+| `papis.enable` | `false` | papis 本体・設定・`Assets/references/` の同期 |
 | `papis.folder` | `"papis-library"` | Drive 側のフォルダ名 |
 | `papis.opentool` | `"xdg-open"` | `papis open` が使うビューア |
 | `obsidian.enable` | `false` | Obsidian 本体の導入。`initializeVault = true` のときは `.obsidian` 設定も配置 |
@@ -141,7 +141,7 @@ Vault 側で削除した分類フォルダや運用ドキュメントも復活�
 | `mirrorRepo` | `null` | `mirror-vault` の出力先（骨格を配る側だけが使う） |
 | `after` / `wants` | `[]` | 同期サービスの起動順序の依存 |
 
-vault の中のパス（`attachments/` と `references/`）は規約で固定していて、options にはしていない。
+vault の中のパス（`Assets/attachments/` と `Assets/references/`）は規約で固定していて、options にはしていない。
 配布する `.obsidian/app.json` の `attachmentFolderPath` と食い違わせないため。
 
 ## 日常の操作
@@ -163,7 +163,7 @@ zettelkasten-sync --dry-run    # 以降の引数は rclone bisync へ素通し
 
 ## Originals の同期
 
-`originals.enable = true` で、Git管理外の `<vault>/Originals` を同期対象に加える。
+`originals.enable = true` で、Git管理外の `<vault>/Assets/Originals` を同期対象に加える。
 
 | option | 既定 | 用途 |
 |---|---|---|
@@ -218,10 +218,10 @@ resyncでは通常競合の両版保存と挙動が違うため、dry-runだけ�
 
 ### 配布する新構成
 
-入口は `Home.md`。知識は `Wiki/` と `Zettel/`、未処理は `Inbox/`、行動は `Action/`、
-原稿は `Writing/`、資料ごとの読書は `Reading/<citekey>/` に置く。
-`System/Bases/` と `Templates/` は Home・日次・週次・月次の一覧を支える。
-`Originals/` と `_scratch/` は作るが、中身は Git 管理とミラーの対象外にする。
+入口は `Home.md`。知識は `Knowledge/Wiki/` と `Knowledge/Zettel/`、未処理は `Inbox/`、行動は `LifeState/Action/`、
+原稿は `Knowledge/Writing/`、資料ごとの読書は `Knowledge/Reading/<citekey>/` に置く。
+`System/Bases/` と `System/Templates/` は Home・日次・週次・月次の一覧を支える。
+`Assets/Originals/` と `_scratch/` は作るが、中身は Git 管理とミラーの対象外にする。
 旧 `Tasks/`、`Goals/`、`Registry/` 等は新規作成しない。
 
 共有指示は `AGENTS.md`、スキルは `.agents/skills/` が正本。`CLAUDE.md` は `@AGENTS.md` を読み、
@@ -239,7 +239,7 @@ resyncでは通常競合の両版保存と挙動が違うため、dry-runだけ�
 - **`.obsidian/` はディレクトリ単位** — 既にあれば丸ごと触らない。Obsidian 自身が常時書き換える
   自己整合的な状態なので、ファイル単位で差し込むと、利用者が無効化したプラグインを
   `community-plugins.json` 経由で復活させる事故が起きる。
-- **骨格はファイル単位** — 「`CLAUDE.md` だけ既にある」「`Templates/` は空」が普通に起きる。
+- **骨格はファイル単位** — 「`CLAUDE.md` だけ既にある」「`System/Templates/` は空」が普通に起きる。
 
 ### 何を配るかの選び方も 2 つ
 
@@ -259,13 +259,13 @@ resyncでは通常競合の両版保存と挙動が違うため、dry-runだけ�
   取り直すので、受け取り側の手作業は増えない（初回だけダウンロードが走る）。
 - **`obsidian-git` の `autoPullOnBoot`** — remote を持たない vault では起動ごとに git のエラー通知が出るため。
 
-骨格の方は逆で、vault が tracked にしているものの大半（`Wiki/` `Zettel/` `Dailies/` `Action/` …）が個人の
+骨格の方は逆で、vault が tracked にしているものの大半（`Knowledge/Wiki/` `Knowledge/Zettel/` `LifeLogs/Dailies/` `LifeState/Action/` …）が個人の
 ノート。全 tracked を写すと private が public へ流れ込むので、配ると決めたものを
 `nix/skeleton-paths.nix` に列挙する。足し忘れは「配り漏れ」で済み、漏洩にはならない。
 列挙したファイルが vault に無ければ `mirror-vault` は中止する——黙って落とすと、直後の
 `rsync --delete` が repo 側からも消してしまうため。
 
-空フォルダは git に載らないので `.gitkeep` で保持する。`attachments/` と `references/` は
+空フォルダは git に載らないので `.gitkeep` で保持する。`Assets/attachments/` と `Assets/references/` は
 同期ジョブの `ConditionPathIsDirectory` が要求するため、空でも存在させる必要がある。
 
 ### いつ mirror するか
