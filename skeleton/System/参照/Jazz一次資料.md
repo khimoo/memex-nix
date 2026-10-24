@@ -6,12 +6,12 @@ topic: jazz
 # Jazz一次資料
 
 ジャズ練習で信頼する一次資料の登録簿。AIメンター（jazz-mentor スキル）は、複数の流儀が
-食い違ったとき、ここに挙がった資料を優先して準拠する。将来 `Zettel/` へ少しずつ蒸留する。
+食い違ったとき、ここに挙がった資料を優先して準拠する。将来 `Knowledge/Zettel/` へ少しずつ蒸留する。
 
 **運用**: 資料の実体（PDF/画像）はここに置かない（vault はテキスト軽量）。リンクだけ貼る。
 実体の置き場は種類ごとに:
 - Web → URL をそのまま貼る
-- 書籍・論文PDF → papis に入れて `[@citekey]` で参照（references/ 経由で Drive 同期）。
+- 書籍・論文PDF → papis に入れて `[@citekey]` で参照（Assets/references/ 経由で Drive 同期）。
   手早く置きたいだけなら Google Drive の共有リンクを貼るだけでも可（後で papis に昇格）
 - 動画・音源 → URL
 

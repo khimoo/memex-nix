@@ -14,15 +14,18 @@ disable-model-invocation: true
 
 - wikilink と埋め込みの被リンク: `obsidian vault=<対象Vault名> backlinks path="<パス>"`
 - Dataview、Tasks、Bases のクエリに書かれたパスの条件（`rg -n '<パスの一部>' -g '*.md' -g '*.base'`）
-- テンプレート（`Templates/`）と、Journals の設定（`.obsidian/plugins/journals/data.json`）にあるパス
+- テンプレート（`System/Templates/`）と、Journals の設定（`.obsidian/plugins/journals/data.json`）にあるパス
 - Tasks の設定（`.obsidian/plugins/obsidian-tasks-plugin/data.json`）の globalQuery と、ファイル名を日付として扱うフォルダ
+- Vault の外の設定: 同期とマウントのパス（`khimoo/zettelkasten-workflow` の `nix/hm-module.nix`、flake_public の `hosts/nixos-desktop/data-disk.nix`）。Git 管理外のフォルダを動かす前に、両方のデバイスで同期の timer と path ユニットを止める。
 
 変更に依存する設定、テンプレート、クエリは、ノートの変更と同じ移行の単位に含める。
 
 ## 移動と改名の手順
 
 - 移動と改名は Obsidian CLI で行い、リンクの更新を Obsidian に任せる: `obsidian vault=<対象Vault名> move path="<元>" to="<先>"`、`obsidian vault=<対象Vault名> rename path="<元>" name="<新しい名前>"`。開始前に `obsidian vault=<対象Vault名> vault info=path` が作業対象のルートを返すことを確かめ、違えば止める。試験Vaultでは `vault=vault-test` を指定する。対象の取り違えを防ぐため。Obsidian が起動している必要がある。
+- Obsidian CLI はサンドボックスの外で実行する（`~/.config/obsidian` と D-Bus を使うため）。`move` はファイル単位なので、フォルダは `obsidian eval` で `app.fileManager.renameFile` を使って移す。`eval` が大きな値を返すと止まるので、結果は Obsidian の中からファイルに書き出す。
 - 実行のあとで `obsidian vault=<対象Vault名> unresolved total` を前と比べ、増えていないことを確かめる。
+- 移動を他のデバイスに届けるには、コミットのあとで push する。Git 管理外のフォルダは push では届かないので、デバイスごとに移す。
 - Git の管理外のもの（原本を除く添付・文献など）を動かす前は、`.scratch/backup/` にバックアップを取り、戻せることを確かめる。
 
 ## 統合と分割
@@ -43,6 +46,6 @@ disable-model-invocation: true
 
 - 置き場所は、知識、読書の作業、実務資料などの用途で決める。
 - 実体を Git で管理するかは、大きさ、更新の頻度、同期の方法から資料ごとに判断する。判断がつかなければ利用者に確かめる。Git 管理外の場所のファイルを Git に足すときも確かめる。
-- 原本は `Originals/`、再生成できる中間物は `.scratch/`、採用した生成物は `attachments/`。原本の読み取り境界と採用の確認は `AGENTS.md` に従う。
+- 原本は `Assets/Originals/`、再生成できる中間物は `.scratch/`、採用した生成物は `Assets/attachments/`。原本の読み取り境界と採用の確認は `AGENTS.md` に従う。
 - 文献の出典は `[@citekey]` で示す。原本はリンクで開くか、本文で表示したいときは `![[...]]` で埋め込む。表示の方法と Git での管理は別に判断する。
 - Git管理と同期の実際の設定は対象Vaultで確かめる。一つのディレクトリの設定をVault全体の規則に一般化しない。

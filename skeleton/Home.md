@@ -1,6 +1,6 @@
 # Home
 
-今日の行動、期限、未完了タスク、待ち状態のタスク、ならびに振り返りや再調査の状況をまとめて確認するための入口です。タスク一覧には、`Action/`、`Dailies/`、`Reviews/` 内のチェックボックスのみを抽出して表示します。
+今日の行動、期限、未完了タスク、待ち状態のタスク、ならびに振り返りや再調査の状況をまとめて確認するための入口です。タスク一覧には、`LifeState/Action/`、`LifeLogs/Dailies/`、`LifeLogs/Reviews/` 内のチェックボックスのみを抽出して表示します。
 
 ## 今日
 
@@ -38,9 +38,9 @@ group by filename
 const week = moment().format("gggg-[W]ww");
 const month = moment().format("YYYY-MM");
 for (const [label, name] of [["今週", week], ["今月", month]]) {
-  const p = dv.page(`Reviews/${name}`);
-  if (!p) dv.paragraph(`${label}の振り返りがまだない: [[Reviews/${name}]]`);
-  else if (p.reviewed !== true) dv.paragraph(`${label}の振り返りが終わっていない: [[Reviews/${name}]]`);
+  const p = dv.page(`LifeLogs/Reviews/${name}`);
+  if (!p) dv.paragraph(`${label}の振り返りがまだない: [[LifeLogs/Reviews/${name}]]`);
+  else if (p.reviewed !== true) dv.paragraph(`${label}の振り返りが終わっていない: [[LifeLogs/Reviews/${name}]]`);
 }
 ```
 

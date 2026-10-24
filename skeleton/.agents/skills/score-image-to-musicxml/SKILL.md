@@ -6,7 +6,7 @@ description: 紙の譜面の画像や PDF を homr で MusicXML に変換し、�
 # score-image-to-musicxml — 譜面画像のMusicXML化
 
 紙やPDFで持っている譜面を、移調に使えるMusicXMLにする。
-開始時に利用者のピアノ・ジャズのゴールノート（例: `Action/ピアノ・ジャズ.md`）を確認し、現在の練習方針を確認する。
+開始時にVaultルートの `LifeState/Action/ピアノ・ジャズ.md` を読み、現在の練習方針を確認する。
 練習メニューやどの曲を扱うかの相談は `.agents/skills/jazz-mentor/SKILL.md` を使う。
 
 ## 音符とコード記号の分担
@@ -22,12 +22,12 @@ homrは設計上、コード記号を扱わない。設定を探しても解決�
 
 ## 原本と生成物の置き場
 
-元の画像・PDFは再取得できない原本として `Originals/` に保管する。AIは読むだけとし、既存原本の移動や採用は `AGENTS.md#確認の境界` に従う。
+元の画像・PDFは再取得できない原本として `Assets/Originals/` に保管する。AIは読むだけとし、既存原本の移動や採用は `AGENTS.md#確認の境界` に従う。
 変換には作業用のコピーを使い、原本を移動・上書きしない。
 
 生成する MusicXML、PDF、中間画像は、Vault の `.scratch/` の作業ディレクトリに出す（Git 管理外で、再生成できる中間物の置き場。設計書第7節）。Vault の正式な置き場へは自動で入れない。
 
-人間がレビューして価値があると判断したものだけを、その都度 `attachments/` へ移す（生成物の採用は事前承認）。移す先と Git 管理の要否も人間が指定する。判断の基準は `restructuring-vault` の「資料の保存」にある。移調は `transpose-12keys`、練習内容の相談は `jazz-mentor` が担当する。
+人間がレビューして価値があると判断したものだけを、その都度 `Assets/attachments/` へ移す（生成物の採用は事前承認）。移す先と Git 管理の要否も人間が指定する。判断の基準は `restructuring-vault` の「資料の保存」にある。移調は `transpose-12keys`、練習内容の相談は `jazz-mentor` が担当する。
 
 ## 入力の準備
 

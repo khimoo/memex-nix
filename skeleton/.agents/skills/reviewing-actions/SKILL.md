@@ -20,9 +20,9 @@ description: Actionのゴール・プロジェクト、タスク、日次・週�
 
 ## 置き場
 
-行動のタスクは `Action/`、`Dailies/`、`Reviews/` に置く。
+行動のタスクは `LifeState/Action/`、`LifeLogs/Dailies/`、`LifeLogs/Reviews/` に置く。
 
-プロジェクトは `Action/<名前>.md` に `kind: project` を付け、本文にタスク、`goal` に貢献するゴールへのリンクのリストを持つ。空なら独立した活動。`status` は `active`、`someday`、`done`、`dropped`。終了時は状態を変えて同じ場所に残す。
+プロジェクトは `LifeState/Action/<名前>.md` に `kind: project` を付け、本文にタスク、`goal` に貢献するゴールへのリンクのリストを持つ。空なら独立した活動。`status` は `active`、`someday`、`done`、`dropped`。終了時は状態を変えて同じ場所に残す。
 
 ゴールもActionに置き、`kind: goal`、`status` は `active`、`paused`、`done`、`dropped`、`idea`。成果目標と自分で調整できる行動の目安を分ける。`focus` は `注力`、`維持`、`休止`（空なら維持）。注力数の上限は設けず、配分は利用者が決める。`status` が空のノートは「状態未設定」で扱う。
 
@@ -54,7 +54,7 @@ TasksのGlobal Queryの正本は `.obsidian/plugins/obsidian-tasks-plugin/data.j
 
 ## 振り返り
 
-週次 `Reviews/YYYY-Www` はその週の月曜、月次 `Reviews/YYYY-MM` は月初に利用者がJournalsで作る。自動生成や繰り返しタスクにはしない。存在だけで完了とみなさず、終えたら `reviewed: true` にする。
+週次 `LifeLogs/Reviews/YYYY-Www` はその週の月曜、月次 `LifeLogs/Reviews/YYYY-MM` は月初に利用者がJournalsで作る。自動生成や繰り返しタスクにはしない。存在だけで完了とみなさず、終えたら `reviewed: true` にする。
 
 週次では前週の完了・中止、習慣の実施日数と合計、注力ゴールごとの予定と実際の行動量、待ち、Inboxの処理を振り返り、今週の配分を決める。細かいタスクは必要なら週次に自由に書く。
 

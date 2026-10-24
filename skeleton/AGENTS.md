@@ -4,14 +4,15 @@
 
 ## 置き場
 
-- `Home.md` 今日の行動、期限、振り返り漏れ、未処理の入口。
-- `Inbox/` 思いつきとWebクリップ。`Wiki/` 学問・技術・歴史などの体系の知識を抽象度の階層で置く。`Zettel/` 自分の経験と思考から生まれた知識（考察、手順、判断、出会った人物や作品）と構造ノート。
-- `Reading/<citekey>/` 資料ごとの章メモ、行間、演習、予想と計測。資料を読み始めるときにpapisへ登録し、citekeyを決める。
-- `Action/` ゴールとプロジェクト。`Dailies/` 日次記録。`Reviews/` 週次・月次の振り返り。
-- `Resources/` 生活の管理の事実。`Writing/<原稿名>/` 原稿と材料。`Templates/` テンプレート。
-- `Originals/` 再取得できない原本。AIは読むだけ。`attachments/` 添付と採用した生成物。`references/` papisの文献。
-- `System/` 規則台帳、失敗記録、設計、計画、Bases、共有の参照資料。`.scratch/` AIの作業出力と変換の中間物（Git管理外。通常は消してよいが、移行の退避・評価記録は保存期限が決まるまで保持）。
-- `IndexNote.md` 方法論の考察。`README.md` 人間向けの案内。
+トップレベルは扱いで分ける。基準は `System/設計/2026-10-16-vault再設計.md#4. 置き場`。
+
+- `Home.md` 今日の行動、期限、振り返り漏れ、未処理の入口。`Inbox/` 思いつきとWebクリップ。
+- `Knowledge/` 知識と原稿。`Wiki/` 学問・技術・歴史などの体系の知識を抽象度の階層で置く。`Zettel/` 自分の経験と思考から生まれた知識（考察、手順、判断、出会った人物や作品）と構造ノート。`Reading/<citekey>/` 資料ごとの章メモ、行間、演習、予想と計測。資料を読み始めるときにpapisへ登録し、citekeyを決める。`Writing/<原稿名>/` 原稿と材料。
+- `LifeLogs/` 日々の記録。`Dailies/` 日次記録。`Reviews/` 週次・月次の振り返り。`Sessions/` AIセッションの記録。
+- `LifeState/` 現在の状態。`Action/` ゴールとプロジェクト。`Admin/` 生活の管理の事実。
+- `Assets/` Git管理外でGoogle Driveと同期するファイル。`Originals/` 再取得できない原本。AIは読むだけ。`attachments/` 添付と採用した生成物。`references/` papisの文献。
+- `System/` 規則台帳、失敗記録、設計、計画、Bases、テンプレート、共有の参照資料。`.scratch/` AIの作業出力と変換の中間物（Git管理外。通常は消してよいが、移行の退避・評価記録は保存期限が決まるまで保持）。
+- `README.md` 人間向けの案内。
 
 ## 常に守ること
 
@@ -39,6 +40,7 @@
 - 手書きノートを清書する → `transcribe-handwritten-note`
 - タスク、振り返り、長期ゴールを扱う → `reviewing-actions`
 - 実務資料を更新する → `updating-records`
+- `Knowledge/Writing/hello worldが実行されるまで/` の記事を gemini-proofread で校正し終えた → `proofreading-drafts`
 - ジャズの練習を相談する → `jazz-mentor`
 - 楽譜の画像を MusicXML にする → `score-image-to-musicxml`
 - 練習フレーズを移調する → `transpose-12keys`

@@ -1,6 +1,6 @@
 ---
 name: db-predict-measure
-description: DB を自作する本を読み、人間が書いた Rust コードの低レイヤの挙動の予想と計測を検証する。Reading/<citekey>/の観測ノートを扱うときに使う。
+description: DB を自作する本を読み、人間が書いた Rust コードの低レイヤの挙動の予想と計測を検証する。Knowledge/Reading/<citekey>/の観測ノートを扱うときに使う。
 ---
 
 # DB 実装の読書（予想と計測の検証）

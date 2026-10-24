@@ -36,5 +36,5 @@ description: 手書きノート（写真・スキャン画像）をテキスト�
 
 - 数式の記法は `AGENTS.md` の「常に守ること」に従う。作業の前に `System/参照/Typst記法.md` の対応表と実例を読む。
 - 原本画像は消さず温存する。折りたたみ callout（`> [!note]- 元の手書きノート`）に入れて本文の下に残す。
-- 原本は `Originals/` を読むだけ。出自は `AGENTS.md#常に守ること` の清書の扱いに従い、`transcribed_from` に原本へのリンクと頁をリストで記す。
+- 原本は `Assets/Originals/` を読むだけ。出自は `AGENTS.md#常に守ること` の清書の扱いに従い、`transcribed_from` に原本へのリンクと頁をリストで記す。
 - 利用者が原本と照合したら `transcription_checked` にその日付を記す。AIの転記や自己照合だけで埋めない。照合者と実施を区別するため。
