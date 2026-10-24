@@ -1,6 +1,6 @@
 # vault の添付フォルダと papis ライブラリを Google Drive へ双方向同期する単一コマンド。
 #
-# 対象ごとにコマンドを分けない。日常の操作は zettelkasten-sync の1つで、何が同期されるかは
+# 対象ごとにコマンドを分けない。日常の操作は memex-sync の1つで、何が同期されるかは
 # home-manager の options が eval 時に決める。unit だけは監視対象ごとに起動されるので
 # --only で片方に絞る。
 #
@@ -30,12 +30,12 @@ let
   targetList = lib.concatStringsSep "|" targets;
 
   example = opt: desc:
-    "  zettelkasten-sync ${opt}${lib.concatStrings (lib.genList (_: " ") (21 - lib.stringLength opt))}${desc}";
+    "  memex-sync ${opt}${lib.concatStrings (lib.genList (_: " ") (21 - lib.stringLength opt))}${desc}";
 
   usageText = lib.concatStringsSep "\n" ([
-    "使い方: zettelkasten-sync [--only ${targetList}] [rclone bisync への追加引数...]"
+    "使い方: memex-sync [--only ${targetList}] [rclone bisync への追加引数...]"
     ""
-    "  同期先は home-manager の services.zettelkasten が持つ。引数では変えられない。"
+    "  同期先は home-manager の services.memex が持つ。引数では変えられない。"
     ""
     "例:"
     (example "" "設定どおり全部同期する")
@@ -46,7 +46,7 @@ let
   ++ [ (example "--dry-run" "rclone に渡す引数はそのまま素通しする") ]
   ++ lib.optionals (originals != null) [
     ""
-    "  Originals の初回は両側の内容を確認し、zettelkasten-sync --only originals --resync を実行してください。"
+    "  Originals の初回は両側の内容を確認し、memex-sync --only originals --resync を実行してください。"
     "  --resync は通常の競合処理とは別です。バックアップがあっても事前確認が必要です。"
   ]);
 
@@ -55,20 +55,20 @@ let
   syncBlock = { name, label, dir, folder, baseline }: ''
     if [ -z "$only" ] || [ "$only" = ${name} ]; then
       echo "==> ${label}: ${dir} <-> ${rcloneRemote}:${folder}" >&2
-      ZK_SYNC_TARGET=${lib.escapeShellArg name} zk_bisync ${lib.escapeShellArg label} ${lib.escapeShellArg dir} \
+      MEMEX_SYNC_TARGET=${lib.escapeShellArg name} memex_bisync ${lib.escapeShellArg label} ${lib.escapeShellArg dir} \
         ${lib.escapeShellArg "${rcloneRemote}:${folder}"} \
         ${baseline} "''${rclone_args[@]}" || status=1
     fi
   '';
 in
 pkgs.writeShellApplication {
-  name = "zettelkasten-sync";
+  name = "memex-sync";
   runtimeInputs = bisync.runtimeInputs;
   text = ''
     ${bisync.text}
 
     ${lib.optionalString (originals != null) ''
-      zk_sync_originals() {
+      memex_sync_originals() {
         local baseline_dir arg resync=false
         baseline_dir="''${XDG_CACHE_HOME:-$HOME/.cache}/rclone/bisync-originals"
         for arg in "''${rclone_args[@]}"; do
@@ -80,9 +80,9 @@ pkgs.writeShellApplication {
         shopt -s nullglob
         baseline_lsts=("$baseline_dir"/*.lst)
         shopt -u nullglob
-        if [ "''${#baseline_lsts[@]}" -eq 0 ] && [ "$resync" != true ] && [ "''${ZK_FORCE_RESYNC:-}" != 1 ]; then
+        if [ "''${#baseline_lsts[@]}" -eq 0 ] && [ "$resync" != true ] && [ "''${MEMEX_FORCE_RESYNC:-}" != 1 ]; then
           echo "Originals: 同期の記録がありません。両側の内容を確認して手動で初期化してください。" >&2
-          echo "  → zettelkasten-sync --only originals --resync" >&2
+          echo "  → memex-sync --only originals --resync" >&2
           return 1
         fi
 
@@ -95,7 +95,7 @@ pkgs.writeShellApplication {
             ;;
         esac
         vault="$(realpath -m -- ${lib.escapeShellArg originals.vaultDir})" || return 1
-        backup_root="''${XDG_DATA_HOME:-$HOME/.local/share}/zettelkasten/originals-backups"
+        backup_root="''${XDG_DATA_HOME:-$HOME/.local/share}/memex/originals-backups"
         localbackup="$(realpath -m -- "$backup_root/$host")" || return 1
         if [ "$vault" = / ] || [ "$localbackup" = "$vault" ] || [[ "$localbackup" == "$vault/"* ]]; then
           echo "Originals: ローカル退避先は vault の外に置いてください: $localbackup" >&2
@@ -105,7 +105,7 @@ pkgs.writeShellApplication {
         localrun="$(mktemp -d "$localbackup/$(date -u +%Y%m%dT%H%M%SZ)-XXXXXXXX")" || return 1
         runid="''${localrun##*/}"
         echo ${lib.escapeShellArg "==> Originals: ${originals.dir} <-> ${rcloneRemote}:${originals.folder}"} >&2
-        ZK_SYNC_TARGET=originals ZK_CONFLICT_RESOLVE=none zk_bisync Originals ${lib.escapeShellArg originals.dir} \
+        MEMEX_SYNC_TARGET=originals MEMEX_CONFLICT_RESOLVE=none memex_bisync Originals ${lib.escapeShellArg originals.dir} \
           ${lib.escapeShellArg "${rcloneRemote}:${originals.folder}"} bisync-originals \
           --recover --max-lock 2m --conflict-loser num --backup-dir1 "$localrun" \
           --backup-dir2 ${lib.escapeShellArg "${rcloneRemote}:${originals.backupFolder}"}/"$host/$runid" \
@@ -157,8 +157,8 @@ pkgs.writeShellApplication {
         ;;
     esac
 
-    zk_rclone_init
-    zk_rclone_check ${lib.escapeShellArg rcloneRemote}
+    memex_rclone_init
+    memex_rclone_check ${lib.escapeShellArg rcloneRemote}
 
     # 対象ごとに独立して試す(片方が落ちても相方を止めない)。1つでも失敗したら非ゼロで終わる。
     status=0
@@ -177,7 +177,7 @@ pkgs.writeShellApplication {
     })}
     ${lib.optionalString (originals != null) ''
       if [ -z "$only" ] || [ "$only" = originals ]; then
-        zk_sync_originals || status=1
+        memex_sync_originals || status=1
       fi
     ''}
 

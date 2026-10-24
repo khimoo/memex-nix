@@ -1,4 +1,4 @@
-# vault(ノートを置くフォルダ)を宣言的に用意する。services.zettelkasten.initializeVault の
+# vault(ノートを置くフォルダ)を宣言的に用意する。services.memex.initializeVault の
 # activation だけが呼ぶ。
 #
 # 非破壊の契約——作るのは「無いもの」だけで、既にあるものは触らない:

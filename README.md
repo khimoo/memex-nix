@@ -1,4 +1,4 @@
-# zettelkasten-workflow
+# memex-nix
 
 Obsidian の vault を、どのマシンでも同じ形で立ち上げるための **home-manager モジュール**。
 添付ファイルと文献 PDF の Google Drive 同期・papis（文献管理）の設定・Obsidian 本体と
@@ -39,10 +39,10 @@ echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
       url = "github:nix-community/home-manager/release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    zettelkasten.url = "github:khimoo/zettelkasten-workflow";
+    memex-nix.url = "github:khimoo/memex-nix";
   };
 
-  outputs = { nixpkgs, home-manager, zettelkasten, ... }:
+  outputs = { nixpkgs, home-manager, memex-nix, ... }:
     let
       # ==== ここだけ自分の環境に合わせる ====
       username = "alice";
@@ -63,16 +63,16 @@ echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
         };
 
         modules = [
-          zettelkasten.homeModules.zettelkasten
+          memex-nix.homeModules.memex
           {
             home = {
               inherit username homeDirectory;
               stateVersion = "25.11";
             };
 
-            services.zettelkasten = {
+            services.memex = {
               enable = true;
-              vaultDir = "${homeDirectory}/zettelkasten";
+              vaultDir = "${homeDirectory}/memex";
               # ゼロから始めるなら true。vault フォルダを switch が用意する。
               # 既にノートの repo を clone してある/これから clone するなら false。
               initializeVault = true;
@@ -98,10 +98,10 @@ nix run home-manager/release-25.11 -- switch
 `.gitignore`）と、骨格の配置——分類フォルダ・運用ドキュメント・`.obsidian` 設定——まで済ませる。
 どれも既にあるものは触らない。骨格の自動配置も `initializeVault = true` のときだけ行う。
 
-### 4. `zettelkasten-setup` を実行する
+### 4. `memex-setup` を実行する
 
 ```sh
-zettelkasten-setup
+memex-setup
 ```
 
 宣言では原理的に届かない残り——Google Drive の認証（`rclone config` を開いて渡す）と、
@@ -122,7 +122,7 @@ Vault 側で削除した分類フォルダや運用ドキュメントも復活�
 
 ## 設定できること
 
-`services.zettelkasten` の options。`vaultDir` 以外は既定のままでも動く。
+`services.memex` の options。`vaultDir` 以外は既定のままでも動く。
 
 | option | 既定 | |
 |---|---|---|
@@ -149,16 +149,16 @@ vault の中のパス（`Assets/attachments/` と `Assets/references/`）は規�
 同期は自動で走る（ファイルを変更したときと、取りこぼしを拾う定期実行）。手で走らせるなら:
 
 ```sh
-zettelkasten-sync              # 設定どおり全部
-zettelkasten-sync --only papis # papis だけ
-zettelkasten-sync --dry-run    # 以降の引数は rclone bisync へ素通し
+memex-sync              # 設定どおり全部
+memex-sync --only papis # papis だけ
+memex-sync --dry-run    # 以降の引数は rclone bisync へ素通し
 ```
 
 同期先は home-manager の options が持っていて、引数では変えられない。
 
 **「このマシンには同期の記録が無いのに Drive 側にはデータがある」** と言われて止まったときは、
 記録の喪失か、既存の Drive に新しいマシンを合流させようとしているかのどちらか。中身を確認して、
-合流させる場合だけ、対象を限定して `ZK_FORCE_RESYNC=1 zettelkasten-sync --only <対象名> --resync` を実行する。
+合流させる場合だけ、対象を限定して `MEMEX_FORCE_RESYNC=1 memex-sync --only <対象名> --resync` を実行する。
 
 
 ## Originals の同期
@@ -177,7 +177,7 @@ zettelkasten-sync --dry-run    # 以降の引数は rclone bisync へ素通し
 競合ログを確認し、人が採用版を元の名前へ戻すかノートの参照を直してから再同期する。
 削除は伝播するが、上書き・削除される版をローカルとremoteそれぞれの退避先へ保持する。
 退避先はホスト名と一意な実行IDで分け、通常の同期対象には含めない。
-ローカル退避先は `${XDG_DATA_HOME:-$HOME/.local/share}/zettelkasten/originals-backups/`。
+ローカル退避先は `${XDG_DATA_HOME:-$HOME/.local/share}/memex/originals-backups/`。
 この退避は同じDriveアカウントの喪失に備える独立バックアップではない。
 
 Originalsは `--recover --max-lock 2m` を使う。強制中断時に残るロックは最後の更新から
@@ -190,13 +190,13 @@ Originalsは同期履歴がないとき自動初期化せず停止する。両PC
 初期化の基準を決めてから、対象を限定して実行する:
 
 ```sh
-zettelkasten-sync --only originals --resync --dry-run
-zettelkasten-sync --only originals --resync
-zettelkasten-sync --only originals
+memex-sync --only originals --resync --dry-run
+memex-sync --only originals --resync
+memex-sync --only originals
 ```
 
 `--dry-run`でも退避用の空ディレクトリが作られる場合がある。履歴が既にある場合の
-`ZK_FORCE_RESYNC=1` は、内容確認と退避後の手動復旧に限る。自動再試行にresyncを組み込まない。
+`MEMEX_FORCE_RESYNC=1` は、内容確認と退避後の手動復旧に限る。自動再試行にresyncを組み込まない。
 resyncでは通常競合の両版保存と挙動が違うため、dry-runだけで元データの退避を代用しない。
 
 導入時は隔離データで両PC追加、同名競合、削除・上書きと復元、中断、重複実行を確認する。

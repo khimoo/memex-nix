@@ -1,5 +1,5 @@
 # vault に骨格(分類フォルダ・運用ドキュメント・Obsidian 設定)を非破壊で配置(seed)する。
-# module の activation が呼ぶ。vault パスは第1引数か ZETTELKASTEN_ROOT で受け取る(依存性逆転)。
+# module の activation が呼ぶ。vault パスは第1引数か MEMEX_ROOT で受け取る(依存性逆転)。
 #
 # 非破壊(seed-once)の契約は、運ぶ物の性質ごとに粒度が違う:
 #   - .obsidian … ディレクトリ単位。既にあれば丸ごと触らない。Obsidian 自身が常時書き換える
@@ -27,11 +27,11 @@ pkgs.writeShellApplication {
       shift
     done
 
-    vault="''${positional[0]:-''${ZETTELKASTEN_ROOT:-}}"
+    vault="''${positional[0]:-''${MEMEX_ROOT:-}}"
 
     if [ -z "$vault" ]; then
       echo "seed-vault: vault パスが未指定です。" >&2
-      echo "  → 第1引数か環境変数 ZETTELKASTEN_ROOT で vault(絶対パス)を渡してください。" >&2
+      echo "  → 第1引数か環境変数 MEMEX_ROOT で vault(絶対パス)を渡してください。" >&2
       exit 1
     fi
 

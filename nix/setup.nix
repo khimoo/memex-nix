@@ -22,7 +22,7 @@ let
   inherit (pkgs) lib;
 in
 pkgs.writeShellApplication {
-  name = "zettelkasten-setup";
+  name = "memex-setup";
   runtimeInputs = [ pkgs.coreutils pkgs.rclone pkgs.gnugrep ];
   text = ''
     vault=${lib.escapeShellArg vaultDir}
@@ -32,7 +32,7 @@ pkgs.writeShellApplication {
 
     # 対話が前提なので、パイプや systemd から呼ばれたら黙って進めず落とす。
     if [ ! -t 0 ]; then
-      die "zettelkasten-setup は対話的に実行してください(標準入力が端末ではありません)。"
+      die "memex-setup は対話的に実行してください(標準入力が端末ではありません)。"
     fi
 
     confirm() {
@@ -53,7 +53,7 @@ pkgs.writeShellApplication {
     }
 
     cat >&2 <<EOF
-    === zettelkasten setup ===
+    === memex setup ===
 
     vault: $vault
 
@@ -68,7 +68,7 @@ pkgs.writeShellApplication {
     # vault は switch が用意している前提。無いのは設定側の問題なので、ここでは作らずに案内する。
     if [ ! -d "$vault" ]; then
       say "vault がまだありません: $vault"
-      say "  → services.zettelkasten.initializeVault = true にして switch し直すか、"
+      say "  → services.memex.initializeVault = true にして switch し直すか、"
       say "    別の経路(ノート repo の clone 等)で用意してから再実行してください。"
       die "中断しました。"
     fi
@@ -105,11 +105,11 @@ pkgs.writeShellApplication {
         say ""
         say "同期に失敗しました。上の rclone のメッセージが理由です。"
         say "  → 記録が無い場合は両側の中身を確認し、失敗した対象だけを初期化してください:"
-        say "      ZK_FORCE_RESYNC=1 zettelkasten-sync --only <対象名> --resync"
-        say "    対象名は zettelkasten-sync --help で確認できます。Originals は originals です。"
+        say "      MEMEX_FORCE_RESYNC=1 memex-sync --only <対象名> --resync"
+        say "    対象名は memex-sync --help で確認できます。Originals は originals です。"
       fi
     else
-      say "同期は行いませんでした。あとで zettelkasten-sync を実行してください。"
+      say "同期は行いませんでした。あとで memex-sync を実行してください。"
     fi
 
     # ---- 残る手作業 ----
@@ -128,7 +128,7 @@ pkgs.writeShellApplication {
 
     自動同期が有効な対象は、ファイル変更と定期実行で同期します。
     Originals は実 Drive での手動検証・初期化後に originals.autoSync を有効にしてください。
-    手で走らせたいときは zettelkasten-sync を実行してください。
+    手で走らせたいときは memex-sync を実行してください。
     EOF
   '';
 }

@@ -10,7 +10,7 @@
 { pkgs }:
 
 pkgs.symlinkJoin {
-  name = "obsidian-zettelkasten";
+  name = "obsidian-memex";
   paths = [ pkgs.obsidian ];
   nativeBuildInputs = [ pkgs.makeWrapper ];
   postBuild = ''
@@ -26,7 +26,7 @@ pkgs.symlinkJoin {
   '';
 
   meta = pkgs.obsidian.meta // {
-    description = "Obsidian(zettelkasten-workflow 版: git と claude を PATH に載せる)";
+    description = "Obsidian(memex-nix 版: git と claude を PATH に載せる)";
     mainProgram = "obsidian";
   };
 }

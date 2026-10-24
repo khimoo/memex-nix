@@ -10,7 +10,7 @@
 { name        # unit 名(ログとファイル名になる)
 , description # 人間向けの説明
 , dir         # 監視・同期するディレクトリの絶対パス
-, target      # zettelkasten-sync --only に渡す対象名
+, target      # memex-sync --only に渡す対象名
 , intervalSeconds
 }:
 

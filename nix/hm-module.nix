@@ -1,4 +1,4 @@
-# Zettelkasten(Obsidian vault)の完結型 home-manager モジュール。
+# memex(Obsidian vault)の完結型 home-manager モジュール。
 # vault のための機能——Obsidian 本体と設定、添付フォルダの Google Drive 同期、papis(参照文献)
 # ライブラリの設定と同期——を一括で所有する。vault の位置(vaultDir)を注入するだけで、
 # どのマシンでも同一の Obsidian ワークフローが立ち上がる。
@@ -17,7 +17,7 @@
 { config, lib, pkgs, ... }:
 
 let
-  cfg = config.services.zettelkasten;
+  cfg = config.services.memex;
 
   # 同期対象のパスは規約で固定(options にしない)。
   attachmentsDir = "${cfg.vaultDir}/Assets/attachments";
@@ -36,7 +36,7 @@ let
   within = parent: child: parent == "/" || child == parent || lib.hasPrefix "${parent}/" child;
   originalsFolder = normalizedPath cfg.originals.folder;
   originalsBackupFolder = normalizedPath cfg.originals.backupFolder;
-  originalsLocalBackup = normalizedPath "${config.xdg.dataHome}/zettelkasten/originals-backups";
+  originalsLocalBackup = normalizedPath "${config.xdg.dataHome}/memex/originals-backups";
 
   # 同期コマンドは1本。何を同期するかは eval 時にここで焼き込む(実行時に設定を読む層は無い)。
   syncScript = import ./sync-script.nix {
@@ -100,18 +100,18 @@ let
     nativeBuildInputs = [ pkgs.makeWrapper ];
     postBuild = ''
       wrapProgram $out/bin/mirror-vault \
-        --set-default ZETTELKASTEN_ROOT ${lib.escapeShellArg cfg.vaultDir} \
-        --set-default ZETTELKASTEN_CONFIG_REPO ${lib.escapeShellArg (toString cfg.mirrorRepo)}
+        --set-default MEMEX_ROOT ${lib.escapeShellArg cfg.vaultDir} \
+        --set-default MEMEX_CONFIG_REPO ${lib.escapeShellArg (toString cfg.mirrorRepo)}
     '';
   };
 in
 {
-  options.services.zettelkasten = {
-    enable = lib.mkEnableOption "Zettelkasten(Obsidian vault)の完結型ワークフロー";
+  options.services.memex = {
+    enable = lib.mkEnableOption "memex(Obsidian vault)の完結型ワークフロー";
 
     vaultDir = lib.mkOption {
       type = lib.types.str;
-      example = "/home/alice/zettelkasten";
+      example = "/home/alice/memex";
       description = ''
         vault(Obsidian のノートを置くフォルダ)の絶対パス。
         Assets/attachments/、Assets/references/、Assets/Originals/ を設定に応じて同期する。
@@ -255,7 +255,7 @@ in
     mirrorRepo = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = null;
-      example = "/home/alice/zettelkasten-workflow";
+      example = "/home/alice/memex-nix";
       description = ''
         vault の骨格をミラーする config repo の checkout 絶対パス。
         null(既定)なら PATH に何も載せない。非 null のとき mirror-vault を PATH に載せる。
@@ -270,7 +270,7 @@ in
       assertions = [
         {
           assertion = lib.hasPrefix "/" cfg.vaultDir;
-          message = "services.zettelkasten.vaultDir には絶対パスを指定してください: ${cfg.vaultDir}";
+          message = "services.memex.vaultDir には絶対パスを指定してください: ${cfg.vaultDir}";
         }
         {
           assertion = !cfg.originals.enable || (
@@ -282,7 +282,7 @@ in
         }
         {
           assertion = !cfg.originals.enable || !(within (normalizedPath cfg.vaultDir) originalsLocalBackup);
-          message = "Originals のローカル退避先(xdg.dataHome/zettelkasten/originals-backups)は vaultDir の外に置いてください。";
+          message = "Originals のローカル退避先(xdg.dataHome/memex/originals-backups)は vaultDir の外に置いてください。";
         }
       ];
     })
@@ -295,7 +295,7 @@ in
     # vault の用意は他のどの副作用よりも先。linkGeneration の後に置くのは、副作用を持つ
     # activation を write boundary より後ろに置くという home-manager の規約に合わせるため。
     (lib.mkIf (cfg.enable && cfg.initializeVault) {
-      home.activation.zettelkastenVault = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+      home.activation.memexVault = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
         $DRY_RUN_CMD ${lib.getExe initVault} ${lib.escapeShellArg cfg.vaultDir}
       '';
     })
@@ -305,8 +305,8 @@ in
     })
 
     (lib.mkIf (cfg.enable && cfg.attachments.enable) (mkSyncJob {
-      name = "zettelkasten-sync";
-      description = "Zettelkasten 添付を Google Drive へ bisync する";
+      name = "attachments-sync";
+      description = "memex の添付を Google Drive へ bisync する";
       dir = attachmentsDir;
       target = "attachments";
       inherit (cfg.attachments) intervalSeconds;
@@ -346,7 +346,7 @@ in
     # clone で用意する既存 vault では、削除済みのファイルを switch のたびに復元しない。
     # .obsidian だけは obsidian.enable のときに --obsidian で足す。
     (lib.mkIf (cfg.enable && cfg.initializeVault) {
-      home.activation.seedVault = lib.hm.dag.entryAfter [ "linkGeneration" "zettelkastenVault" ] ''
+      home.activation.seedVault = lib.hm.dag.entryAfter [ "linkGeneration" "memexVault" ] ''
         $DRY_RUN_CMD ${lib.getExe seedVault} ${lib.optionalString cfg.obsidian.enable "--obsidian "}${lib.escapeShellArg cfg.vaultDir}
       '';
     })

@@ -98,6 +98,58 @@ class Layout(unittest.TestCase):
         git = json.loads((SK/'.obsidian/plugins/obsidian-git/data.json').read_text())
         self.assertFalse(git['autoPullOnBoot'])
 
+    def test_sanitize_removes_current_vault_personal_note_references(self):
+        with tempfile.TemporaryDirectory(prefix='vault-sanitize-') as temp:
+            source = Path(temp)/'source'; copy_skeleton(source)
+            additions = {
+                'README.md': (
+                    'なお、[[Zettelkasten入門]] はユーザー独自の方法論に関する考察であり、運用規約の正本ではない点に留意する。\n'
+                    '記法の対応表は [[System/参照/Typst記法]]、独自の記号や用語の定義は [[数学記法一覧]] を参照すること。\n'),
+                'AGENTS.md': '- `Knowledge/Writing/hello worldが実行されるまで/` の記事を gemini-proofread で校正し終えた → `proofreading-drafts`\n',
+                '.agents/skills/transpose-12keys/SKILL.md': '`Knowledge/Zettel/Zettelkasten入門.md#Zettelkastenの実際。[^2]` の収集についての考察 と、`LifeState/Action/ピアノ・ジャズ.md` の「集めること≠理解」を踏まえ、作れるものを全部残さない。\n',
+            }
+            for skill in ['jazz-mentor', 'score-image-to-musicxml', 'transpose-12keys']:
+                name = f'.agents/skills/{skill}/SKILL.md'
+                additions[name] = additions.get(name, '') + '開始時にVaultルートの `LifeState/Action/ピアノ・ジャズ.md` を読み、目標を確認する。\n'
+            for name, text in additions.items():
+                with (source/name).open('a') as handle:
+                    handle.write('\n' + text)
+            run(sys.executable, str(ROOT/'nix/sanitize-skeleton.py'), str(source))
+            guide = (source/'README.md').read_text()
+            self.assertNotIn('[[Zettelkasten入門]]', guide)
+            self.assertNotIn('[[数学記法一覧]]', guide)
+            self.assertIn('記法の対応表は [[System/参照/Typst記法]]を参照すること。', guide)
+            self.assertNotIn('hello worldが実行されるまで', (source/'AGENTS.md').read_text())
+            transpose = (source/'.agents/skills/transpose-12keys/SKILL.md').read_text()
+            self.assertNotIn('Zettelkasten入門', transpose)
+            self.assertIn('採用する生成物は利用者が決め、作れるものを全部残さない。', transpose)
+            for skill in ['jazz-mentor', 'score-image-to-musicxml', 'transpose-12keys']:
+                text = (source/f'.agents/skills/{skill}/SKILL.md').read_text()
+                self.assertNotIn('開始時にVaultルートの', text)
+                self.assertIn('開始時に利用者のピアノ・ジャズのゴールノート（例: `LifeState/Action/ピアノ・ジャズ.md`）を確認し、', text)
+            before = snapshot(source)
+            run(sys.executable, str(ROOT/'nix/sanitize-skeleton.py'), str(source))
+            self.assertEqual(snapshot(source), before)
+
+    def test_sanitize_rejects_personal_references_outside_known_replacements(self):
+        cases = {
+            'README.md': ['[[Zettelkasten入門]]', '[[数学記法一覧]]'],
+            'AGENTS.md': ['hello worldが実行されるまで'],
+            '.agents/skills/transpose-12keys/SKILL.md': ['Zettelkasten入門'],
+        }
+        for skill in ['jazz-mentor', 'score-image-to-musicxml', 'transpose-12keys']:
+            cases.setdefault(f'.agents/skills/{skill}/SKILL.md', []).append('開始時にVaultルートの')
+        for name, phrases in cases.items():
+            for phrase in phrases:
+                with self.subTest(name=name, phrase=phrase), tempfile.TemporaryDirectory(prefix='vault-sanitize-') as temp:
+                    source = Path(temp)/'source'; copy_skeleton(source)
+                    with (source/name).open('a') as handle:
+                        handle.write(f'\n別の文に残った {phrase} への言及。\n')
+                    result = run(sys.executable, str(ROOT/'nix/sanitize-skeleton.py'), str(source), check=False)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn(name, result.stderr)
+                    self.assertIn(phrase, result.stderr)
+
     def test_migration_section_with_subheadings_or_at_end_is_removed(self):
         original = (SK/'AGENTS.md').read_text()
         cases = {
@@ -147,6 +199,25 @@ class Layout(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn('Home.md', result.stderr)
             self.assertEqual(snapshot(dest/'skeleton'), before)
+
+    @unittest.skipUnless(TOOLS, 'set VAULT_TOOLS to run built tools')
+    def test_sanitize_failure_does_not_change_destination(self):
+        with tempfile.TemporaryDirectory(prefix='vault-mirror-') as temp:
+            source, dest = Path(temp)/'source', Path(temp)/'dest'
+            copy_skeleton(source)
+            dest.mkdir(); shutil.copytree(SK, dest/'skeleton', symlinks=True)
+            for path in [source, dest]:
+                run('git', 'init', '-q', str(path))
+            run('git', '-C', str(source), 'add', '.')
+            with (source/'README.md').open('a') as handle:
+                handle.write('\n別の文に [[Zettelkasten入門]] への言及。\n')
+            before = snapshot(dest/'skeleton')
+            result = run(f'{TOOLS}/mirror-vault', str(source), str(dest), check=False)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('README.md', result.stderr)
+            self.assertIn('[[Zettelkasten入門]]', result.stderr)
+            self.assertEqual(snapshot(dest/'skeleton'), before)
+            self.assertEqual(run('git', '-C', str(dest), 'status', '--porcelain').stdout, '?? skeleton/\n')
 
     @unittest.skipUnless(TOOLS, 'set VAULT_TOOLS to run built tools')
     def test_private_notes_and_history_are_not_mirrored(self):

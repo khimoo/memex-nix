@@ -1,5 +1,5 @@
 {
-  description = "khimoo の Zettelkasten(Obsidian vault)。添付フォルダと papis ライブラリの Google Drive 同期・papis 設定を、どのマシンでも再現できる完結型 home-manager モジュールとして提供する";
+  description = "khimoo の memex(Obsidian vault)。添付フォルダと papis ライブラリの Google Drive 同期・papis 設定を、どのマシンでも再現できる完結型 home-manager モジュールとして提供する";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
@@ -14,10 +14,10 @@
   # `nix run` 用の apps は持たない——同期コマンドは options の値を焼き込んで module が生成する。
   #
   # 提供物:
-  #   homeModules.zettelkasten … 統合 HM モジュール services.zettelkasten。
+  #   homeModules.memex … 統合 HM モジュール services.memex。
   #     添付 watcher と papis(設定 + ライブラリ同期 watcher)を常駐管理し、vault の骨格を seed し、
-  #     同期コマンド(zettelkasten-sync)と、宣言的に片付かない残りを進める対話 CLI
-  #     (zettelkasten-setup)を PATH に載せる。これがこの flake の唯一の公開面。
+  #     同期コマンド(memex-sync)と、宣言的に片付かない残りを進める対話 CLI
+  #     (memex-setup)を PATH に載せる。これがこの flake の唯一の公開面。
   #   packages … options に依存しない部品。開発時に単体で `nix build` して検証するためのもので、
   #     利用者が直接触ることは想定しない。
   outputs = { self, nixpkgs }:
@@ -50,8 +50,8 @@
       };
     in
     {
-      homeModules.zettelkasten = import ./nix/hm-module.nix;
-      homeModules.default = self.homeModules.zettelkasten;
+      homeModules.memex = import ./nix/hm-module.nix;
+      homeModules.default = self.homeModules.memex;
 
       packages = forAllSystems (system: {
         seed-vault = seedVaultFor system;

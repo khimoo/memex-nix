@@ -42,8 +42,8 @@ pkgs.writeShellApplication {
       echo "mirror-vault: vault の骨格を config repo の skeleton/ へミラーして commit する。" >&2
       echo "" >&2
       echo "usage: mirror-vault [--dry-run] [--push] [VAULT] [DEST]" >&2
-      echo "  VAULT  vault(ノート private repo の clone)の絶対パス(省略時 ZETTELKASTEN_ROOT)" >&2
-      echo "  DEST   ミラー先 config repo の checkout 絶対パス(省略時 ZETTELKASTEN_CONFIG_REPO)" >&2
+      echo "  VAULT  vault(ノート private repo の clone)の絶対パス(省略時 MEMEX_ROOT)" >&2
+      echo "  DEST   ミラー先 config repo の checkout 絶対パス(省略時 MEMEX_CONFIG_REPO)" >&2
       echo "  --dry-run  commit せず差分のみ表示する" >&2
       echo "  --push     commit 後に push する(既定は push しない=人間ゲート)" >&2
     }
@@ -63,13 +63,13 @@ pkgs.writeShellApplication {
       shift
     done
 
-    vault="''${positional[0]:-''${ZETTELKASTEN_ROOT:-}}"
-    dest="''${positional[1]:-''${ZETTELKASTEN_CONFIG_REPO:-}}"
+    vault="''${positional[0]:-''${MEMEX_ROOT:-}}"
+    dest="''${positional[1]:-''${MEMEX_CONFIG_REPO:-}}"
 
     # ---- preflight: 宣言的に用意できない前提(clone の有無・git repo か)を loud に落とす ----
     if [ -z "$vault" ]; then
       err "vault パスが未指定です。"
-      err "  → 第1引数か環境変数 ZETTELKASTEN_ROOT で vault(絶対パス)を渡してください。"
+      err "  → 第1引数か環境変数 MEMEX_ROOT で vault(絶対パス)を渡してください。"
       exit 1
     fi
     if [ ! -d "$vault" ]; then
@@ -88,7 +88,7 @@ pkgs.writeShellApplication {
 
     if [ -z "$dest" ]; then
       err "ミラー先 config repo が未指定です。"
-      err "  → 第2引数か環境変数 ZETTELKASTEN_CONFIG_REPO で dest(絶対パス)を渡してください。"
+      err "  → 第2引数か環境変数 MEMEX_CONFIG_REPO で dest(絶対パス)を渡してください。"
       exit 1
     fi
     if [ ! -d "$dest" ]; then
