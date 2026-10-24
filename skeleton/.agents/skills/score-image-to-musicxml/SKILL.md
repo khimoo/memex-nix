@@ -6,7 +6,7 @@ description: 紙の譜面の画像や PDF を homr で MusicXML に変換し、�
 # score-image-to-musicxml — 譜面画像のMusicXML化
 
 紙やPDFで持っている譜面を、移調に使えるMusicXMLにする。
-開始時にVaultルートの `LifeState/Action/ピアノ・ジャズ.md` を読み、現在の練習方針を確認する。
+開始時に利用者のピアノ・ジャズのゴールノート（例: `LifeState/Action/ピアノ・ジャズ.md`）を確認し、現在の練習方針を確認する。
 練習メニューやどの曲を扱うかの相談は `.agents/skills/jazz-mentor/SKILL.md` を使う。
 
 ## 音符とコード記号の分担

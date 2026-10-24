@@ -16,7 +16,7 @@ disable-model-invocation: true
 - Dataview、Tasks、Bases のクエリに書かれたパスの条件（`rg -n '<パスの一部>' -g '*.md' -g '*.base'`）
 - テンプレート（`System/Templates/`）と、Journals の設定（`.obsidian/plugins/journals/data.json`）にあるパス
 - Tasks の設定（`.obsidian/plugins/obsidian-tasks-plugin/data.json`）の globalQuery と、ファイル名を日付として扱うフォルダ
-- Vault の外の設定: 同期とマウントのパス（`khimoo/zettelkasten-workflow` の `nix/hm-module.nix`、flake_public の `hosts/nixos-desktop/data-disk.nix`）。Git 管理外のフォルダを動かす前に、両方のデバイスで同期の timer と path ユニットを止める。
+- Vault の外の設定: 同期とマウントのパス（`khimoo/memex-nix` の `nix/hm-module.nix`、flake_public の `hosts/nixos-desktop/data-disk.nix`）。Git 管理外のフォルダを動かす前に、両方のデバイスで同期の timer と path ユニットを止める。
 
 変更に依存する設定、テンプレート、クエリは、ノートの変更と同じ移行の単位に含める。
 

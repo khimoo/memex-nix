@@ -40,7 +40,6 @@
 - 手書きノートを清書する → `transcribe-handwritten-note`
 - タスク、振り返り、長期ゴールを扱う → `reviewing-actions`
 - 実務資料を更新する → `updating-records`
-- `Knowledge/Writing/hello worldが実行されるまで/` の記事を gemini-proofread で校正し終えた → `proofreading-drafts`
 - ジャズの練習を相談する → `jazz-mentor`
 - 楽譜の画像を MusicXML にする → `score-image-to-musicxml`
 - 練習フレーズを移調する → `transpose-12keys`
