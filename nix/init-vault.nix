@@ -62,10 +62,12 @@ pkgs.writeShellApplication {
       cat > "$vault/.gitignore" <<'EOF'
     /.obsidian/workspace.json
     /.obsidian/workspace-mobile.json
-    /Assets/attachments/
+    /Assets/attachments/*
+    !/Assets/attachments/.gitkeep
     /Assets/references/*
     !/Assets/references/.gitkeep
-    /Assets/Originals/
+    /Assets/Originals/*
+    !/Assets/Originals/.gitkeep
     /_scratch/
     /.claudian/sessions/
     /.obsidian/plugins/realclaudian/data.json

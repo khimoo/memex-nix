@@ -265,8 +265,7 @@ resyncでは通常競合の両版保存と挙動が違うため、dry-runだけ�
 列挙したファイルが vault に無ければ `mirror-vault` は中止する——黙って落とすと、直後の
 `rsync --delete` が repo 側からも消してしまうため。
 
-空フォルダは git に載らないので `.gitkeep` で保持する。`Assets/attachments/` と `Assets/references/` は
-同期ジョブの `ConditionPathIsDirectory` が要求するため、空でも存在させる必要がある。
+空フォルダは git に載らないので `.gitkeep` で保持する。
 
 ### いつ mirror するか
 
