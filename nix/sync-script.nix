@@ -167,7 +167,7 @@ pkgs.writeShellApplication {
       name = "attachments";
       label = "添付";
       inherit (attachments) dir folder;
-      baseline = "bisync-zettelkasten";
+      baseline = "bisync-attachments";
     })}
     ${lib.optionalString (papis != null) (syncBlock {
       name = "papis";

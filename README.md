@@ -131,7 +131,7 @@ Vault 側で削除した分類フォルダや運用ドキュメントも復活�
 | `initializeVault` | `false` | vault フォルダと骨格を switch が用意する（作成・`git init`・`.gitignore`・分類フォルダ等）。別経路で clone するなら `false` のまま |
 | `rcloneRemote` | `"gdrive"` | 同期先の rclone remote 名 |
 | `attachments.enable` | `true` | 添付フォルダの Google Drive 双方向同期 |
-| `attachments.folder` | `"zettelkasten-attachments"` | Drive 側のフォルダ名 |
+| `attachments.folder` | `"memex-attachments"` | Drive 側のフォルダ名 |
 | `attachments.intervalSeconds` | `900` | 定期同期の間隔 |
 | `papis.enable` | `false` | papis 本体・設定・`Assets/references/` の同期 |
 | `papis.folder` | `"papis-library"` | Drive 側のフォルダ名 |
@@ -168,8 +168,8 @@ memex-sync --dry-run    # 以降の引数は rclone bisync へ素通し
 | option | 既定 | 用途 |
 |---|---|---|
 | `originals.enable` | `false` | 原本の双方向同期をコマンドへ追加 |
-| `originals.folder` | `"zettelkasten-originals"` | 同じremote内の同期先 |
-| `originals.backupFolder` | `"zettelkasten-originals-backups"` | 同期対象外の旧版退避先 |
+| `originals.folder` | `"memex-originals"` | 同じremote内の同期先 |
+| `originals.backupFolder` | `"memex-originals-backups"` | 同期対象外の旧版退避先 |
 | `originals.intervalSeconds` | `900` | 自動同期時の定期間隔 |
 | `originals.autoSync` | `false` | 初期化・実Drive試験後に自動実行を有効化 |
 

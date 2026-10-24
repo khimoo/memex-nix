@@ -164,7 +164,7 @@ in
 
       folder = lib.mkOption {
         type = lib.types.str;
-        default = "zettelkasten-attachments";
+        default = "memex-attachments";
         description = "添付を置く Google Drive 側のフォルダ名(remote からの相対パス)。無ければ初回同期で作られる。";
       };
 
@@ -206,13 +206,13 @@ in
 
       folder = lib.mkOption {
         type = lib.types.str;
-        default = "zettelkasten-originals";
+        default = "memex-originals";
         description = "原本を置く Google Drive 側のフォルダ(remote からの相対パス)。";
       };
 
       backupFolder = lib.mkOption {
         type = lib.types.str;
-        default = "zettelkasten-originals-backups";
+        default = "memex-originals-backups";
         description = "原本の退避先フォルダ(同じ remote 内、同期先と重複しない相対パス)。";
       };
 
