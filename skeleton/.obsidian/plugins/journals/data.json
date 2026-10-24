@@ -18,9 +18,9 @@
       "confirmCreation": true,
       "nameTemplate": "{{date}}",
       "dateFormat": "gggg-[W]ww",
-      "folder": "Reviews",
+      "folder": "LifeLogs/Reviews",
       "templates": [
-        "Templates/TemplateWeeklyReview.md"
+        "System/Templates/TemplateWeeklyReview.md"
       ],
       "start": "",
       "end": {
@@ -151,9 +151,9 @@
       "confirmCreation": true,
       "nameTemplate": "{{date}}",
       "dateFormat": "YYYY-MM",
-      "folder": "Reviews",
+      "folder": "LifeLogs/Reviews",
       "templates": [
-        "Templates/TemplateMonthly.md"
+        "System/Templates/TemplateMonthly.md"
       ],
       "start": "",
       "end": {
@@ -268,9 +268,9 @@
       "confirmCreation": true,
       "nameTemplate": "{{date}}",
       "dateFormat": "YYYY-MM-DD",
-      "folder": "Dailies",
+      "folder": "LifeLogs/Dailies",
       "templates": [
-        "Templates/TemplateDailyJournal.md"
+        "System/Templates/TemplateDailyJournal.md"
       ],
       "start": "",
       "end": {
@@ -557,7 +557,7 @@
     "display": "month",
     "leaf": "right",
     "weeks": "left",
-    "todayMode": "navigate",
+    "todayMode": "create",
     "pickMode": "create",
     "todayStyle": {
       "color": {

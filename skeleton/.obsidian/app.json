@@ -2,11 +2,11 @@
   "alwaysUpdateLinks": true,
   "newFileLocation": "current",
   "userIgnoreFilters": [
-    "Dailies/"
+    "LifeLogs/Dailies/"
   ],
   "vimMode": false,
   "showUnsupportedFiles": true,
-  "attachmentFolderPath": "attachments",
+  "attachmentFolderPath": "Assets/attachments",
   "useMarkdownLinks": false,
   "pdfExportSettings": {
     "pageSize": "A4",

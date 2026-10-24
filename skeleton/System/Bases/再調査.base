@@ -4,29 +4,29 @@ views:
     filters:
       and:
         - or:
-            - file.inFolder("Wiki")
-            - file.inFolder("Zettel")
-        - '!note.review.isEmpty()'
+            - file.inFolder("Knowledge/Wiki")
+            - file.inFolder("Knowledge/Zettel")
+        - "!note.review.isEmpty()"
     order:
       - file.name
-      - note.review
-      - note.ai_generated
+      - review
+      - ai_generated
   - type: table
     name: AI が書いたまま
     filters:
       and:
-        - '!note.ai_generated.isEmpty()'
-        - '!file.inFolder("Reading")'
+        - "!note.ai_generated.isEmpty()"
+        - '!file.inFolder("Knowledge/Reading")'
     order:
       - file.name
-      - note.ai_generated
-      - note.review
+      - ai_generated
+      - review
   - type: table
     name: 読書の AI 記録
     filters:
       and:
-        - '!note.ai_generated.isEmpty()'
-        - file.inFolder("Reading")
+        - "!note.ai_generated.isEmpty()"
+        - file.inFolder("Knowledge/Reading")
     order:
       - file.name
-      - note.ai_generated
+      - ai_generated

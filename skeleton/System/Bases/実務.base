@@ -3,7 +3,7 @@ views:
     name: 更新期限
     filters:
       and:
-        - file.inFolder("Resources")
+        - file.inFolder("LifeState/Admin")
         - or:
             - 'note.renew < today() + "61d"'
             - 'note.due < today() + "61d"'
@@ -16,7 +16,7 @@ views:
     name: 確認が古い
     filters:
       and:
-        - file.inFolder("Resources")
+        - file.inFolder("LifeState/Admin")
         - or:
             - 'note.confirmed.isEmpty()'
             - 'note.confirmed < today() - "1y"'

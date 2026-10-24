@@ -1,6 +1,6 @@
 {
   "presets": {},
-  "globalQuery": "path regex matches /^(Action|Dailies|Reviews)\\//",
+  "globalQuery": "path regex matches /^(LifeState\\/Action|LifeLogs\\/(Dailies|Reviews))\\//",
   "globalFilter": "",
   "removeGlobalFilter": false,
   "taskFormat": "tasksPluginEmoji",

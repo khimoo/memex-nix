@@ -5,7 +5,7 @@ views:
     name: ゴール
     filters:
       and:
-        - file.inFolder("Action")
+        - file.inFolder("LifeState/Action")
         - 'note.kind == "goal"'
     groupBy:
       property: formula.focus_or_default
@@ -18,7 +18,7 @@ views:
     name: 進行中の活動
     filters:
       and:
-        - file.inFolder("Action")
+        - file.inFolder("LifeState/Action")
         - 'note.kind == "project"'
         - 'note.status == "active"'
     order:
@@ -31,13 +31,13 @@ views:
       and:
         - 'note.status.isEmpty()'
         - or:
-            - file.inFolder("Action")
+            - file.inFolder("LifeState/Action")
             - and:
-                - file.inFolder("Reading")
+                - file.inFolder("Knowledge/Reading")
                 - 'file.name == "index"'
-                - 'file.folder.split("/").length == 2'
+                - 'file.folder.split("/").slice(0, file.folder.split("/").length - 1).join("/") == "Knowledge/Reading"'
             - and:
-                - file.inFolder("Writing")
+                - file.inFolder("Knowledge/Writing")
                 - 'file.name == "index"'
     order:
       - file.path

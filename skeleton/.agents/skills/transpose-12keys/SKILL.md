@@ -26,7 +26,7 @@ description: ジャズピアノのフレーズをMuseScore CLIで指定キーへ
 
 ## 生成物の置き場
 
-MusicXML、各キーの PDF、結合 PDF は、Vault の `_scratch/` の作業ディレクトリに出す（Git 管理外で、再生成できる中間物の置き場。設計書第7節）。Vault の正式な置き場へは自動で入れない。
+MusicXML、各キーの PDF、結合 PDF は、Vault の `.scratch/` の作業ディレクトリに出す（Git 管理外で、再生成できる中間物の置き場。設計書第7節）。Vault の正式な置き場へは自動で入れない。
 
 人間がレビューして価値があると判断したものだけを、その都度 `attachments/` へ移す（生成物の採用は事前承認）。移す先と Git 管理の要否も人間が指定する。判断の基準は `restructuring-vault` の「資料の保存」にある。
 
