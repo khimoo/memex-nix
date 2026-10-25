@@ -19,9 +19,10 @@
 let
   cfg = config.services.memex;
 
-  # 同期対象のパスは規約で固定(options にしない)。
+  # 同期対象のパスは規約で固定する(設定できる option にしない)。papis だけは利用側がマウント先に
+  # 使うので、読み取り専用の option(papis.libraryDir)で公開する。
   attachmentsDir = "${cfg.vaultDir}/Assets/attachments";
-  papisDir = "${cfg.vaultDir}/Assets/references";
+  papisDir = cfg.papis.libraryDir;
   originalsDir = "${cfg.vaultDir}/Assets/Originals";
 
   anySync = cfg.attachments.enable || cfg.papis.enable || cfg.originals.enable;
@@ -180,6 +181,17 @@ in
         type = lib.types.bool;
         default = false;
         description = "papis(参照文献マネージャ)本体・設定・vault の Assets/references/ の同期を有効化する。";
+      };
+
+      libraryDir = lib.mkOption {
+        type = lib.types.str;
+        readOnly = true;
+        default = "${cfg.vaultDir}/Assets/references";
+        defaultText = lib.literalExpression ''"''${config.services.memex.vaultDir}/Assets/references"'';
+        description = ''
+          papis ライブラリの絶対パス(読み取り専用)。vault 内の位置は規約で固定する。
+          マウントなどで同じパスを扱う利用側は、パスを書き写さずにこれを読む。
+        '';
       };
 
       folder = lib.mkOption {

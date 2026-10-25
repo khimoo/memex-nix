@@ -134,6 +134,7 @@ Vault 側で削除した分類フォルダや運用ドキュメントも復活�
 | `attachments.folder` | `"memex-attachments"` | Drive 側のフォルダ名 |
 | `attachments.intervalSeconds` | `900` | 定期同期の間隔 |
 | `papis.enable` | `false` | papis 本体・設定・`Assets/references/` の同期 |
+| `papis.libraryDir` | `<vaultDir>/Assets/references`（読み取り専用） | papis ライブラリの絶対パス。マウントなどで同じパスを扱う側が読む |
 | `papis.folder` | `"papis-library"` | Drive 側のフォルダ名 |
 | `papis.opentool` | `"xdg-open"` | `papis open` が使うビューア |
 | `obsidian.enable` | `false` | Obsidian 本体の導入。`initializeVault = true` のときは `.obsidian` 設定も配置 |
