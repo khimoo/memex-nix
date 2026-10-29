@@ -158,7 +158,7 @@
       rclone "''${MEMEX_RCLONE_ARGS[@]}" bisync \
         "$dir" "$remote" \
         --workdir "$baseline_dir" \
-        --conflict-resolve "$MEMEX_CONFLICT_RESOLVE" --resilient --verbose \
+        --conflict-resolve "$MEMEX_CONFLICT_RESOLVE" --resilient --recover --max-lock 2m --verbose \
         "''${resync_args[@]}" "$@"
     }
   '';

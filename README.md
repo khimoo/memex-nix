@@ -161,6 +161,15 @@ memex-sync --dry-run    # 以降の引数は rclone bisync へ素通し
 記録の喪失か、既存の Drive に新しいマシンを合流させようとしているかのどちらか。中身を確認して、
 合流させる場合だけ、対象を限定して `MEMEX_FORCE_RESYNC=1 memex-sync --only <対象名> --resync` を実行する。
 
+添付・papis・Originalsは共通で `--recover --max-lock 2m` を使う。
+実行中はロックの期限を更新し、中断後は約2分で失効する。
+次の通常同期で直近の成功履歴から復旧を試みる。
+復旧できない場合は停止して調査し、既存履歴の作り直しを自動で強制しない。
+ただし、rclone 1.75.2では空のロックを期限切れとして扱わず、停止し続ける。
+空ロックの場合は、同期処理が動いていないことを確認してからロックを退避し、通常同期を再実行する。
+[rcloneの復旧仕様](https://rclone.org/bisync/#recover)と
+[ロック期限の仕様](https://rclone.org/bisync/#max-lock)を参照。
+
 
 ## Originals の同期
 
@@ -180,12 +189,6 @@ memex-sync --dry-run    # 以降の引数は rclone bisync へ素通し
 退避先はホスト名と一意な実行IDで分け、通常の同期対象には含めない。
 ローカル退避先は `${XDG_DATA_HOME:-$HOME/.local/share}/memex/originals-backups/`。
 この退避は同じDriveアカウントの喪失に備える独立バックアップではない。
-
-Originalsは `--recover --max-lock 2m` を使う。強制中断時に残るロックは最後の更新から
-約2分で期限切れとなり、次の通常同期が直近の成功履歴から復旧を試みる。
-ロックの自動削除や自動resyncは行わない。履歴欠損・復旧失敗は停止して調査する。
-[rcloneの復旧仕様](https://rclone.org/bisync/#recover)と
-[ロック期限の仕様](https://rclone.org/bisync/#max-lock)を参照。
 
 Originalsは同期履歴がないとき自動初期化せず停止する。両PCとDriveの内容を同期外へ退避・照合し、
 初期化の基準を決めてから、対象を限定して実行する:

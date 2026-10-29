@@ -107,7 +107,7 @@ pkgs.writeShellApplication {
         echo ${lib.escapeShellArg "==> Originals: ${originals.dir} <-> ${rcloneRemote}:${originals.folder}"} >&2
         MEMEX_SYNC_TARGET=originals MEMEX_CONFLICT_RESOLVE=none memex_bisync Originals ${lib.escapeShellArg originals.dir} \
           ${lib.escapeShellArg "${rcloneRemote}:${originals.folder}"} bisync-originals \
-          --recover --max-lock 2m --conflict-loser num --backup-dir1 "$localrun" \
+          --conflict-loser num --backup-dir1 "$localrun" \
           --backup-dir2 ${lib.escapeShellArg "${rcloneRemote}:${originals.backupFolder}"}/"$host/$runid" \
           "''${rclone_args[@]}"
       }

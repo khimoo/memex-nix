@@ -69,6 +69,13 @@
             paths = [ (seedVaultFor system) (mirrorVaultFor system) (initVaultFor system) ];
           };
         in {
+          bisync-recovery = pkgs.runCommand "bisync-recovery-tests" {
+            nativeBuildInputs = [ pkgs.python3 pkgs.bash pkgs.rclone ];
+            BISYNC_LIB = pkgs.writeText "bisync-lib.sh" (import ./nix/bisync-lib.nix { inherit pkgs; }).text;
+          } ''
+            python3 ${./tests/test_bisync_recovery.py} -v
+            touch $out
+          '';
           layout = pkgs.runCommand "vault-layout-tests" {
             nativeBuildInputs = [ pkgs.python3 pkgs.git ];
           } ''
