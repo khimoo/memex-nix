@@ -1,5 +1,8 @@
-# バイナリ(画像、PDF など)の中身は git-annex で Drive に置き、Git には所在だけを入れる。
+# テキスト(us-ascii、utf-8)以外の中身は git-annex で Drive に置き、Git には所在だけを入れる。
 # 置き場所に関係なく、ファイルの中身で保存先が決まる。
-* annex.largefiles=mimeencoding=binary
+# mimeencoding=binary だけだと、Typst が出す PDF(unknown-8bit)が Git に入る。
+# 空のファイルは libmagic が binary と判定するので、largerthan=0 で Git に残す。
+# .gitattributes の値には空白を書けないので、括弧だけで区切る。
+* annex.largefiles=(largerthan=0)and(not((mimeencoding=us-ascii)or(mimeencoding=utf-8)))
 # プラグインの wasm やキャッシュは Obsidian の起動に要るので、Git に入れて clone だけで揃える。
 .obsidian/** annex.largefiles=nothing

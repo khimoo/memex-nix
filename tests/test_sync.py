@@ -257,5 +257,20 @@ class SyncTests(unittest.TestCase):
         self.assertEqual(self.git("rev-parse", "HEAD", cwd=self.a), before)
 
 
+    def test_empty_note_stays_in_git(self):
+        self.write(self.a, "Knowledge/Writing/empty.md", "")
+        self.git("add", "-A", cwd=self.a)
+        self.git("commit", "-qm", "empty", cwd=self.a)
+        self.ok(self.sync(self.a))
+        self.assertFalse(self.annexed(self.a, "Knowledge/Writing/empty.md"))
+
+    def test_pdf_with_non_utf8_text_encoding_goes_to_annex(self):
+        # Typst が出す PDF は libmagic で unknown-8bit になり、mimeencoding=binary には当たらない。
+        self.write(self.a, "typst.pdf", b"%PDF-1.7\n" + b"stream \xe9\xff\xe0 endstream\n" * 200)
+        self.git("add", "typst.pdf", cwd=self.a)
+        self.git("commit", "-qm", "typst pdf", cwd=self.a)
+        self.assertTrue(self.annexed(self.a, "typst.pdf"))
+
+
 if __name__ == "__main__":
     unittest.main()

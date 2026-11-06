@@ -76,11 +76,14 @@ vault の各ファイルの保存先は、次のどれか1つに決まる。
 配布する `.gitattributes` は次のとおり。
 
 ```gitattributes
-* annex.largefiles=mimeencoding=binary
+* annex.largefiles=(largerthan=0)and(not((mimeencoding=us-ascii)or(mimeencoding=utf-8)))
 .obsidian/** annex.largefiles=nothing
 ```
 
-保存先はファイルの中身（バイナリかどうか）で決まり、置き場所には左右されない。
+保存先はファイルの中身（テキストかどうか）で決まり、置き場所には左右されない。
+`mimeencoding=binary` だけでは、Typst が出す PDF（libmagic の判定は `unknown-8bit`）が Git に入る。
+空のファイルは libmagic が `binary` と判定するので、`largerthan=0` で Git に残す。
+`.gitattributes` の値には空白を書けないので、括弧だけで区切る。
 `.obsidian/` のプラグインの wasm などは Obsidian の起動に要るので、clone だけで揃うよう Git に入れる。
 
 普通の `git add`（obsidian-git の commit も同じ）で振り分けられる。

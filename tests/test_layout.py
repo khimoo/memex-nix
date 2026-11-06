@@ -243,7 +243,7 @@ class Layout(unittest.TestCase):
             vault = Path(temp)/'vault'
             run(f'{TOOLS}/init-vault', str(vault))
             run(f'{TOOLS}/seed-vault', '--obsidian', str(vault))
-            self.assertIn('annex.largefiles=mimeencoding=binary', (vault/'.gitattributes').read_text())
+            self.assertIn('not((mimeencoding=us-ascii)or(mimeencoding=utf-8))', (vault/'.gitattributes').read_text())
             self.assertFalse((vault/'Assets/Originals').exists())
             self.assertFalse((vault/'Assets/references').exists())
             self.assertTrue((vault/'.claude/skills').is_symlink())
