@@ -1,0 +1,5 @@
+# バイナリ(画像、PDF など)の中身は git-annex で Drive に置き、Git には所在だけを入れる。
+# 置き場所に関係なく、ファイルの中身で保存先が決まる。
+* annex.largefiles=mimeencoding=binary
+# プラグインの wasm やキャッシュは Obsidian の起動に要るので、Git に入れて clone だけで揃える。
+.obsidian/** annex.largefiles=nothing

@@ -65,7 +65,7 @@ class Layout(unittest.TestCase):
             self.assertNotIn(phrase, text)
         self.assertIn('知識候補と、保存して参照するWebクリップを分けて置く。', text)
         self.assertIn('既存タスクの作成日や開始日などのメタデータはそのまま維持する。', text)
-        self.assertIn('退避データは、利用者が保持期限を決めるまで削除しない。', text)
+        self.assertIn('その PC だけに置くものは `.gitignore` に書く。', text)
 
     def test_shared_guide_starts_from_current_layout(self):
         self.assert_current_guide((SK/'README.md').read_text())
@@ -98,7 +98,7 @@ class Layout(unittest.TestCase):
             shared = path.read_text()
             self.assertNotIn('INSTANCE_STORAGE_PATH', shared)
             self.assertNotIn('INSTANCE_SYNC_STATE', shared)
-            self.assertIn('新規Vaultでは対象を指定するまで同期しない', shared)
+            self.assertIn('保存先は `.gitattributes` の `annex.largefiles` で決まり', shared)
             self.assertIn('## Feature / 今後検討したいこと', shared)
             run(sys.executable, str(ROOT/'nix/sanitize-skeleton.py'), str(source))
             self.assertEqual(path.read_text(), shared)
@@ -243,7 +243,7 @@ class Layout(unittest.TestCase):
             vault = Path(temp)/'vault'
             run(f'{TOOLS}/init-vault', str(vault))
             run(f'{TOOLS}/seed-vault', '--obsidian', str(vault))
-            self.assertEqual((vault/'.drive-sync-filter').read_text(), '- **\n')
+            self.assertIn('annex.largefiles=mimeencoding=binary', (vault/'.gitattributes').read_text())
             self.assertFalse((vault/'Assets/Originals').exists())
             self.assertFalse((vault/'Assets/references').exists())
             self.assertTrue((vault/'.claude/skills').is_symlink())
@@ -252,7 +252,8 @@ class Layout(unittest.TestCase):
                 self.assertTrue((vault/name).is_dir(), name)
             for name in OLD:
                 self.assertFalse((vault/name).exists(), name)
-            for name in ['Assets/attachments/source.pdf', '_scratch/output.txt']:
+            self.assertNotEqual(run('git', '-C', str(vault), 'check-ignore', 'Assets/attachments/source.pdf', check=False).returncode, 0)
+            for name in ['_scratch/output.txt']:
                 self.assertEqual(run('git', '-C', str(vault), 'check-ignore', name).returncode, 0)
             (vault/'Home.md').write_text('user content\n')
             (vault/'.obsidian/app.json').write_text('{"user": true}\n')
@@ -300,7 +301,6 @@ class Layout(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix='vault-mirror-') as temp:
             source, dest = Path(temp)/'source', Path(temp)/'dest'
             copy_skeleton(source)
-            (source/'.drive-sync-filter').write_text('+ /PRIVATE_SELECTION/**\n- **\n')
             dest.mkdir(); shutil.copytree(SK, dest/'skeleton', symlinks=True)
             for name in ['Knowledge/Wiki/PRIVATE.md', 'LifeState/Action/PRIVATE.md', 'Assets/Originals/PRIVATE.pdf',
                          '.claude/settings.json', '.codex/config.toml']:

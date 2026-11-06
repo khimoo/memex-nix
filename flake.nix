@@ -54,25 +54,18 @@
             paths = [ (seedVaultFor system) (mirrorVaultFor system) (initVaultFor system) ];
           };
         in {
-          bisync-recovery = pkgs.runCommand "bisync-recovery-tests" {
-            nativeBuildInputs = [ pkgs.python3 pkgs.bash pkgs.rclone ];
-            BISYNC_LIB = pkgs.writeText "bisync-lib.sh" (import ./nix/bisync-lib.nix { inherit pkgs; }).text;
-          } ''
-            python3 ${./tests/test_bisync_recovery.py} -v
-            touch $out
-          '';
           sync = pkgs.runCommand "memex-sync-tests" {
-            nativeBuildInputs = [ pkgs.python3 pkgs.bash pkgs.rclone pkgs.coreutils pkgs.gnugrep ];
+            nativeBuildInputs = [ pkgs.python3 pkgs.bash pkgs.rclone pkgs.coreutils pkgs.gnugrep
+              pkgs.gnused pkgs.git pkgs.git-annex pkgs.file ];
+            MEMEX_GITATTRIBUTES = ./skeleton/.gitattributes;
             MEMEX_SYNC_TEMPLATE = pkgs.writeText "memex-sync-template.sh" (import ./nix/sync-script.nix {
               pkgs = pkgs // { writeShellApplication = value: value; };
               rcloneRemote = "test";
               vaultDir = "@VAULT@";
-              folder = "files";
-              backupFolder = "backups";
-              filtersFile = "@VAULT@/.drive-sync-filter";
-              localBackupRoot = "@BACKUPS@";
+              annexRemote = "drive";
             }).text;
           } ''
+            export HOME=$TMPDIR
             python3 ${./tests/test_sync.py} -v
             touch $out
           '';

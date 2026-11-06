@@ -2,7 +2,7 @@
 # mirror-vault はこの allowlist から構成し、配布時に個人用の参照・履歴を除く。
 {
   files = [
-    ".drive-sync-filter"
+    ".gitattributes"
     "AGENTS.md"
     "CLAUDE.md"
     "README.md"

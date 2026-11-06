@@ -3,32 +3,22 @@
 let
   cfg = config.services.memex;
 
-  pathParts = path: lib.foldl' (parts: part:
-    if part == "" || part == "." then parts
-    else if part == ".." then (if parts == [ ] then [ ] else lib.init parts)
-    else parts ++ [ part ]
-  ) [ ] (lib.splitString "/" path);
-  normalizedPath = path: "/${lib.concatStringsSep "/" (pathParts path)}";
-  within = parent: child: parent == "/" || child == parent || lib.hasPrefix "${parent}/" child;
-  folder = normalizedPath cfg.sync.folder;
-  backupFolder = normalizedPath cfg.sync.backupFolder;
-  localBackupRoot = "${config.xdg.dataHome}/memex/files-backups";
   validRemotePath = path: path != "" && !(lib.hasPrefix "/" path)
     && !(lib.hasInfix ":" path) && !(lib.hasInfix "\\" path)
     && !(builtins.elem ".." (lib.splitString "/" path));
 
   syncScript = import ./sync-script.nix {
-    inherit pkgs localBackupRoot;
+    inherit pkgs;
     inherit (cfg) rcloneRemote vaultDir;
-    inherit (cfg.sync) folder filtersFile backupFolder;
+    inherit (cfg.sync) annexRemote;
   };
 
-  # 宣言的に片付かない残り(rclone の OAuth・初回同期の曖昧ケース)を進める対話 CLI。
+  # 宣言的に片付かない残り(rclone の OAuth・git-annex の初期化と保存先の登録)を進める対話 CLI。
   # vault の用意は initializeVault が activation で片付けるので、ここには含めない。
   setupScript = import ./setup.nix {
     inherit pkgs;
     inherit (cfg) vaultDir rcloneRemote;
-    inherit (cfg.sync) filtersFile;
+    inherit (cfg.sync) annexRemote folder;
   };
 
   mkSyncJob = import ./sync-job.nix {
@@ -68,7 +58,7 @@ let
 in
 {
   imports = map (name: lib.mkRemovedOptionModule [ "services" "memex" name ]
-    "services.memex.sync と vault の .drive-sync-filter へ移行し、両PCと旧remoteを照合して手動初期化してください。papis は提供しません。")
+    "services.memex.sync へ移行してください。資料の中身は git-annex で Drive に置きます。papis は提供しません。")
     [ "attachments" "papis" "originals" ];
 
   options.services.memex = {
@@ -79,7 +69,7 @@ in
       example = "/home/alice/memex";
       description = ''
         vault(Obsidian のノートを置くフォルダ)の絶対パス。
-        Drive の同期対象は sync.filtersFile で選ぶ。
+        Drive に置くファイルは vault の .gitattributes(annex.largefiles)で決まる。
         これがマシン固有の唯一の必須設定。
       '';
     };
@@ -121,26 +111,21 @@ in
     };
 
     sync = {
-      enable = lib.mkEnableOption "vault のホワイトリスト式 Drive 同期";
+      enable = lib.mkEnableOption "git-annex による vault の資料の Drive 同期";
       autoSync = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "移行・手動初期化後に vault の監視と定期同期を有効にする。";
+        description = "memex-setup で初期化した後に、commit・pull のたびと定期実行で同期する。";
+      };
+      annexRemote = lib.mkOption {
+        type = lib.types.strMatching "[A-Za-z0-9][A-Za-z0-9_-]*";
+        default = "gdrive";
+        description = "Drive を指す git-annex の special remote の名前。";
       };
       folder = lib.mkOption {
         type = lib.types.str;
-        default = "memex-files";
-        description = "remote 内の同期先の相対パス。";
-      };
-      filtersFile = lib.mkOption {
-        type = lib.types.str;
-        default = "${cfg.vaultDir}/.drive-sync-filter";
-        description = "実行時に読む rclone bisync のホワイトリスト。末尾は - **。";
-      };
-      backupFolder = lib.mkOption {
-        type = lib.types.str;
-        default = "memex-files-backups";
-        description = "remote 内の退避先。同期先と重複しない相対パス。";
+        default = "memex-annex";
+        description = "rclone remote 内で git-annex が中身を置くフォルダ(remote からの相対パス)。初回の登録時だけ使う。";
       };
       intervalSeconds = lib.mkOption {
         type = lib.types.ints.positive;
@@ -193,23 +178,8 @@ in
           message = "services.memex.vaultDir には絶対パスを指定してください: ${cfg.vaultDir}";
         }
         {
-          assertion = !cfg.sync.enable || (
-            validRemotePath cfg.sync.folder && validRemotePath cfg.sync.backupFolder
-            && folder != "/" && backupFolder != "/"
-            && !(within folder backupFolder) && !(within backupFolder folder)
-          );
-          message = "sync.folder と backupFolder は重複しない remote 内の相対パスにしてください。";
-        }
-        {
-          assertion = !cfg.sync.enable || (
-            !(within (normalizedPath cfg.vaultDir) (normalizedPath localBackupRoot))
-            && !(within (normalizedPath localBackupRoot) (normalizedPath cfg.vaultDir))
-          );
-          message = "ローカル退避先(xdg.dataHome/memex/files-backups)と vaultDir を重複させないでください。";
-        }
-        {
-          assertion = !cfg.sync.enable || lib.hasPrefix "/" cfg.sync.filtersFile;
-          message = "sync.filtersFile は絶対パスにしてください。";
+          assertion = !cfg.sync.enable || validRemotePath cfg.sync.folder;
+          message = "sync.folder は remote 内の相対パスにしてください。";
         }
       ];
     })
@@ -226,18 +196,19 @@ in
       '';
     })
 
+    # vault の Git 操作(Obsidian 外の git、エージェント)は git-annex の filter を呼ぶので PATH に要る。
+    # 中身の取得(git annex get)は rclone を呼ぶ。
     (lib.mkIf (cfg.enable && cfg.sync.enable) {
-      home.packages = [ syncScript ];
+      home.packages = [ syncScript pkgs.git-annex pkgs.rclone ];
     })
 
     (lib.mkIf (cfg.enable && cfg.sync.enable && cfg.sync.autoSync) (mkSyncJob {
       name = "memex-sync";
-      description = "memex の選択した資料を Google Drive へ bisync する";
+      description = "memex の資料の中身を git-annex で Google Drive と同期する";
       dir = cfg.vaultDir;
-      # 監視は再帰しないので vault 直下では貼り付けに反応しない。即時に同期したいのは
-      # 貼り付け画像だけで、その保存先は配布する .obsidian/app.json の attachmentFolderPath に合わせている。
-      # 他の資料は定期実行で拾う。
-      watchPaths = [ "${cfg.vaultDir}/Assets/attachments" ];
+      # 中身を送れるのは commit 済みのファイルだけで、届いた所在から中身を取るのは pull の後。
+      # commit・pull・checkout のたびに追記される HEAD の reflog を監視する。
+      watchPaths = [ "${cfg.vaultDir}/.git/logs/HEAD" ];
       inherit (cfg.sync) intervalSeconds;
     }))
 

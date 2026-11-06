@@ -5,8 +5,6 @@ import sys
 
 
 def sanitize(root: Path) -> None:
-    (root / '.drive-sync-filter').write_text('- **\n')
-
     def edit(name, transform):
         path = root / name
         path.write_text(transform(path.read_text()))
@@ -25,11 +23,11 @@ def sanitize(root: Path) -> None:
             'その他の資料は使う文脈に合わせて置き場所を決める。'
             '原本の保護と出典の示し方は [AGENTS.md](AGENTS.md#常に守ること)、'
             '保存の判断は `.agents/skills/restructuring-vault/SKILL.md#資料の保存` に従う。\n\n'
-            'ノート本文はGitで同期する。資料のGit管理対象は `.gitignore` で指定する。'
-            'Drive同期の対象は `.drive-sync-filter` で明示する。'
-            '新規Vaultでは対象を指定するまで同期しない。設定と手動初期化の手順は '
-            '[memex-nix README](https://github.com/khimoo/memex-nix#readme) を参照する。'
-            '退避データは、利用者が保持期限を決めるまで削除しない。\n\n'
+            'ノートはGitで、画像やPDFなどのバイナリの中身はgit-annexでDriveに置く。'
+            '保存先は `.gitattributes` の `annex.largefiles` で決まり、置き場所には左右されない。'
+            'その PC だけに置くものは `.gitignore` に書く。'
+            '既に追跡しているファイルには効かないので、`git rm --cached` で追跡から外す。初期化の手順は '
+            '[memex-nix README](https://github.com/khimoo/memex-nix#readme) を参照する。\n\n'
             '全環境共通のAI向け指示は [AGENTS.md](AGENTS.md) に記載する。'
             'Claude Codeは [CLAUDE.md](CLAUDE.md) 経由で `@AGENTS.md` を読み込み、'
             'Codexは直接参照する。各スキルは `.agents/skills/` に配置し、'

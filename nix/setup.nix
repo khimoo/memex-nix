@@ -1,7 +1,8 @@
 { pkgs
 , vaultDir
 , rcloneRemote
-, filtersFile
+, annexRemote
+, folder
 }:
 
 let
@@ -9,10 +10,10 @@ let
 in
 pkgs.writeShellApplication {
   name = "memex-setup";
-  runtimeInputs = [ pkgs.coreutils pkgs.rclone pkgs.gnugrep ];
+  runtimeInputs = [ pkgs.coreutils pkgs.rclone pkgs.gnugrep pkgs.git pkgs.git-annex ];
   text = ''
     vault=${lib.escapeShellArg vaultDir}
-    filters=${lib.escapeShellArg filtersFile}
+    annex_remote=${lib.escapeShellArg annexRemote}
 
     say() { echo "$*" >&2; }
     die() { echo "$*" >&2; exit 1; }
@@ -46,7 +47,7 @@ pkgs.writeShellApplication {
 
     この先で行うこと:
       1. Google Drive との接続確認(rclone)
-      2. フィルタと初期化手順の案内
+      2. vault の git-annex の初期化と、Drive の保存先の登録
 
     途中で止めても、もう一度実行すれば済んだところは飛ばします。
 
@@ -63,7 +64,7 @@ pkgs.writeShellApplication {
     # ---- rclone ----
     say ""
     cat >&2 <<EOF
-    $filters で選んだ資料を Google Drive で同期します。
+    vault の .gitattributes の annex.largefiles に当たるファイルの中身を、git-annex で Google Drive に置きます。
     その接続は rclone が持ちます(この repo は認証情報を持ちません)。
     EOF
 
@@ -85,9 +86,38 @@ pkgs.writeShellApplication {
     done
     say "remote '$remote' に接続できました。"
 
-    say "$filters に対象のファイルやパターンを指定し、最後のルール - ** を維持してください。"
-    say "旧remoteと両PCを照合・バックアップし、新remoteへ vault 相対の配置で集めてください。"
-    say "両側を確認した後、手動で memex-sync --resync --dry-run、memex-sync --resync を実行してください。"
+    # ---- git-annex ----
+    [ -d "$vault/.git" ] || die "vault が Git リポジトリではありません: $vault"
+    cd "$vault"
+    if [ -z "$(git config --get annex.uuid || true)" ]; then
+      say ""
+      confirm "この PC の vault を git-annex で初期化しますか" y || die "中断しました。"
+      git annex init "$(uname -n)"
+    fi
+    # 中身を作業ツリーに普通のファイルとして置く(Obsidian は symlink を前提にしない)。リポジトリ全体の設定。
+    git annex config --set annex.addunlocked true >/dev/null
+    git annex group here client >/dev/null
+    git annex wanted here standard >/dev/null
+
+    # 他の PC が登録した保存先を知るため、先に git-annex ブランチを取り込む。
+    if git remote get-url origin >/dev/null 2>&1; then
+      git annex sync --only-annex --no-content origin || say "origin から git-annex ブランチを取り込めませんでした。続けます。"
+    fi
+    if [ -z "$(git config --get "remote.$annex_remote.annex-uuid" || true)" ]; then
+      if git show git-annex:remote.log 2>/dev/null | grep -q "name=$annex_remote "; then
+        git annex enableremote "$annex_remote"
+      else
+        say ""
+        say "Drive の保存先 '$annex_remote' はまだどの PC でも登録されていません。"
+        confirm "$remote:${folder} を保存先として登録しますか" y || die "中断しました。"
+        git annex initremote "$annex_remote" type=rclone \
+          rcloneremotename="$remote" rcloneprefix=${lib.escapeShellArg folder} encryption=none
+        # backup は消したファイルや古い版の中身も保持する(退避の役)。
+        git annex group "$annex_remote" backup >/dev/null
+        git annex wanted "$annex_remote" standard >/dev/null
+      fi
+    fi
+    say "保存先 '$annex_remote' を使えます。memex-sync で同期を始めます。"
 
     # ---- 残る手作業 ----
     say ""
@@ -103,7 +133,7 @@ pkgs.writeShellApplication {
             git remote add origin <URL>
             git push -u origin main
 
-    手動検証・初期化後に sync.autoSync を有効にすると、変更監視と定期実行で同期します。
+    sync.autoSync を有効にすると、commit と pull のたびと定期実行で同期します。
     手で走らせたいときは memex-sync を実行してください。
     EOF
   '';

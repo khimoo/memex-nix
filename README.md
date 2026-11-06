@@ -1,7 +1,7 @@
 # memex-nix
 
 Obsidian の vault を用意する home-manager モジュール。Obsidian 本体と設定、vault の骨格、
-ホワイトリストで選ぶ資料の Google Drive 双方向同期を提供する。
+画像や PDF などのバイナリを git-annex で Google Drive に置く同期を提供する。
 ノート本文は別の private repo に置く。対応環境は home-manager（Linux / macOS / WSL）。
 
 ## 導入
@@ -26,7 +26,7 @@ modules = [
       obsidian.enable = true;
       sync = {
         enable = true;
-        autoSync = false;
+        autoSync = true;
       };
     };
   }
@@ -37,7 +37,8 @@ modules = [
 既にノートの repo を clone して使う場合は `initializeVault = false` にする。
 既存のファイルと Obsidian 設定は保持される。
 
-`memex-setup` は対話的に rclone の接続を確認し、フィルタと手動初期化の手順を案内する。
+`memex-setup` は対話的に rclone の接続を確認し、vault の git-annex を初期化して、Drive の保存先を登録する
+（2台目以降の PC では、既に登録された保存先を有効にする）。
 rclone の認証情報は各マシンの `~/.config/rclone/rclone.conf` に用意する。
 `RCLONE_CONFIG` による設定ファイルの指定も使える。
 
@@ -54,104 +55,76 @@ Obsidian で vault を開き、必要なプラグインを有効にする。Clau
 | `vaultDir` | 必須 | vault の絶対パス |
 | `initializeVault` | `false` | 新規 vault と骨格を非破壊で用意する |
 | `rcloneRemote` | `"gdrive"` | rclone remote 名 |
-| `sync.enable` | `false` | `memex-sync` と `memex-setup` を提供する |
-| `sync.autoSync` | `false` | vault の変更監視と定期同期を有効にする |
-| `sync.folder` | `"memex-files"` | remote 内の同期先 |
-| `sync.filtersFile` | `<vaultDir>/.drive-sync-filter` | 実行時に読むホワイトリストの絶対パス |
-| `sync.backupFolder` | `"memex-files-backups"` | remote 内の退避先 |
+| `sync.enable` | `false` | `memex-sync`、`memex-setup`、git-annex を提供する |
+| `sync.autoSync` | `false` | commit・pull のたびと定期実行で `memex-sync` を起動する |
+| `sync.annexRemote` | `"gdrive"` | Drive を指す git-annex の special remote 名 |
+| `sync.folder` | `"memex-annex"` | rclone remote 内で中身を置くフォルダ（初回の登録時だけ使う） |
 | `sync.intervalSeconds` | `900` | 定期同期の間隔（秒） |
 | `obsidian.enable` | `false` | Obsidian を導入し、新規 vault に設定を配置する |
 | `obsidian.installPackage` | `obsidian.enable` | Obsidian を別経路で導入する場合は `false` |
 | `mirrorRepo` | `null` | 骨格の手動ミラー先 checkout |
 | `after` / `wants` | `[]` | 同期サービスの起動順序 |
 
-## 同期対象を選ぶ
+## 保存先の決まり方
 
-同期の root は vault 全体。資料の置き場所と Drive の同期選択は独立している。
-`.drive-sync-filter` に vault 相対のファイルやパターンを指定する。空白や日本語も使える。
+vault の各ファイルの保存先は、次のどれか1つに決まる。
 
-```text
-+ /Knowledge/Reading/資料 A/paper.pdf
-+ /Knowledge/**/*.png
-- /Assets/資料/一時/**
-+ /Assets/資料/**
-- **
+- `.gitignore` に当たる: その PC だけに置き、どこにも同期しない。
+- `.gitattributes` の `annex.largefiles` に当たる: 中身を git-annex に入れて Drive に置き、Git には所在だけを入れる。
+- それ以外: Git に入れる。
+
+配布する `.gitattributes` は次のとおり。
+
+```gitattributes
+* annex.largefiles=mimeencoding=binary
+.obsidian/** annex.largefiles=nothing
 ```
 
-ルールは上から最初に一致したものを使うため、狭い除外は広い include より前に置く。
-`+ /path` でファイル、`+ /path/**` で配下全体を選ぶ。ワイルドカードと除外は
-[rcloneのフィルター構文](https://rclone.org/filtering/)を使える。コメント・空行を除いた最後のルールは `- **` にする。
-ルールをリセットする `!` や `.`・`..` のパス成分は受け付けない。
-新規 vault は `- **` のみで始まる。include のないフィルタは何も変更せず成功終了する。
-フィルタの欠落・空ファイル・不正な構文・末尾の `- **` の欠落は接続前にエラーにする。
+保存先はファイルの中身（バイナリかどうか）で決まり、置き場所には左右されない。
+`.obsidian/` のプラグインの wasm などは Obsidian の起動に要るので、clone だけで揃うよう Git に入れる。
 
-Git の除外設定とは独立している。Drive に入れたい資料はこのフィルタで選び、
-Git に入れたくない資料は別に `.gitignore` へ指定する。
-既存の `.gitignore` は書き換えない。
+普通の `git add`（obsidian-git の commit も同じ）で振り分けられる。
+作業ツリーには普通のファイルとして置く（`annex.addunlocked`）。
+`annex.thin` は使わない。作業ツリーと `.git/annex/objects` が hardlink になり、Drive へ送る前に
+ファイルを上書きすると、古い版の唯一の中身も書き換わるため。バイナリは作業ツリーと `.git/annex` に2部ある。
 
-## 初期化と日常の同期
+`.gitignore` は追跡中のファイルには効かない。既に Git や git-annex で追跡しているファイルを
+「その PC だけ」にするには、`git rm --cached` で追跡から外して commit する。
+`memex-sync` は、`.gitignore` に当たるのに追跡中のファイルを見つけると、失敗にして知らせる。
 
-初回は両PCと remote の内容を照合・バックアップした後に手動で初期化する。
-履歴がない場合、通常実行は自動で resync しない。
+## 同期
 
-```sh
-memex-sync --resync --dry-run
-memex-sync --resync
-memex-sync
-memex-sync --dry-run
-```
+`memex-sync` は次を行う。
 
-CLI で指定できる同期オプションは `--dry-run` と `--resync`。
-同期先・フィルタ・退避先・競合処理は home-manager の設定から決まる。
-手動同期を検証してから `sync.autoSync = true` にすると、監視と timer が一つの job を起動する。
+1. `git annex sync --only-annex --content` で、git-annex ブランチと中身を `origin` と Drive の間で同期する。
+   ノートのブランチ（main）の pull と push はしない。
+2. `git annex copy --all --to <sync.annexRemote>` で、手元にある中身のうち Drive に無いもの（消したファイルや
+   古い版を含む）を送る。`sync --content` は今のファイルしか扱わないため。他の PC から古い版を取ったり、
+   手元から中身を消したりはしない。
+3. 前回確かめた commit からの差分と、前回保留したファイルについて、`annex.largefiles` と実際の保存先が違う
+   ものを移す。`.gitattributes` が変わったときは全ファイルを見直す。`annex.largefiles` は新しく追加したファイルに
+   しか効かないため（規則を変えた後や、git-annex の無い環境で commit されたファイルが残る）。
+   中身を変えずに保存先だけを移し、そのファイルだけを対象に commit する（利用者が stage した別の変更は含めない）。
+   push はしない。編集中のファイルと、中身がまだ届いていないファイルは移さずに保留し、次の実行で見直す。
+4. 移したファイルがあれば、1 と 2 をもう一度行う。
 
-フィルタを追加・削除すると rclone の hash 検査で通常同期が停止し、再照合を要求する。
-除外はデータの削除命令ではなく、対象外となった両側の資料は残る。
-変更内容と両側を確認・退避してから、既存履歴を作り直すことを明示する。
+Drive の保存先は git-annex の `backup` グループに入れる。削除したファイルや古い版の中身も Drive に残る。
+各 PC は `client` グループで、今のファイルの中身だけを持つ。
+中身は rclone 経由で置き、ファイル名ではなく中身のハッシュ名で保存される。
 
-```sh
-MEMEX_FORCE_RESYNC=1 memex-sync --resync --dry-run
-MEMEX_FORCE_RESYNC=1 memex-sync --resync
-```
+`sync.autoSync = true` のとき、`.git/logs/HEAD` の変更（commit、pull、checkout）と定期実行で `memex-sync` が動く。
+中身を送れるのは commit 済みのファイルだけなので、貼り付けた画像は commit した後に Drive に届く。
+中身がまだ届いていない PC では、そのファイルは所在を書いた短いテキストに見える。次の `memex-sync` で中身が届く。
 
-この環境変数だけで初回の resync が有効になることはない。`--resync` の明示が必要。
-resync は通常同期と競合処理が異なるため、dry-run は元データのバックアップを代用しない。
-フィルタの検証済みコピーとrcloneの `.md5` は端末ごとの同期履歴ディレクトリに保存する。
-Vault内のフィルタファイルの隣には同期状態を作らない。
+git-annex で初期化した vault では、Git の操作のたびに git-annex の filter が呼ばれる。
+このモジュールは git-annex を PATH に入れ、Obsidian の起動環境にも入れる。
 
-通常同期の競合は `--conflict-resolve none --conflict-loser num` で両版を別名保存する。
-元の資料パスがなくなる場合はログを確認し、採用版を元の名前に戻すかノートの参照を直す。
-上書き・削除される版は、ローカルと remote それぞれの退避先に残す。
-ローカルは `<xdg.dataHome>/memex/files-backups/<host>/<run-id>/`、remote は
-`<sync.backupFolder>/<host>/<run-id>/`。退避先は同期先と重複させず、ローカルは vault 外に置く。
-実行時にもローカルの symlink を解決して検査する。dry-run でも空の退避ディレクトリは作られる。
-同じ Drive アカウント内の退避は、アカウントの喪失に備えた独立バックアップにはならない。
+## 新しい PC
 
-履歴は各PCの `${XDG_CACHE_HOME:-$HOME/.cache}/rclone/bisync-memex-files` に置く。
-`--resilient --recover --max-lock 2m` により、中断後は直近の成功履歴から通常同期で復旧を試みる。
-復旧できない場合は停止して調査し、resync を自動再試行へ組み込まない。
-空のロックファイルは rclone が期限切れと見なさない場合があるため、処理が動いていないことを
-確認してからロックを退避し、通常同期を再実行する。
+1. switch して、`memex-setup` を実行する。rclone の接続、`git annex init`、保存先の有効化までを行う。
+2. `memex-sync` を実行すると、中身が届く。
 
-## 旧3対象からの移行
-
-`attachments`・`papis`・`originals` options は削除した。古い設定は移行案内付きで失敗する。
-papis のパッケージ・設定・旧3対象の job は生成しない。既存資料や参照を移動・削除する処理はない。
-
-1. 両PCの旧自動同期を利用側で停止し、`sync.autoSync = false` を維持する。
-2. 両PCの資料と旧 remote（既定は `memex-attachments`、`papis-library`、`memex-originals`）を照合し、同期外へバックアップする。
-3. 新 remote folder `memex-files` に vault 相対の配置で集める。例えば旧 `memex-attachments/a.png` は `memex-files/Assets/attachments/a.png` となる。同名の異なる版は人が確認して保持する。
-4. 利用側の旧 options を `sync` に置き換え、継続したい資料をフィルタで指定する。旧3ディレクトリの役割はコードに固定していない。
-5. 両PCで新しいコマンドを反映し、それぞれ手動で `--resync --dry-run`、`--resync`、通常同期を確認する。旧 baseline は新 baseline と混ぜない。
-6. 隔離データで追加・競合・削除・上書きと復元・中断・重複実行を確認してから `sync.autoSync = true` にする。
-
-移行が完了するまで旧 remote・旧資料・バックアップを保持する。外部 flake の input 更新と
-home-manager の反映は利用側で行う。ソースを編集しただけでは既存サービスは更新されない。
-
-利用側の `flake_public` では、次を同じ切替で更新する。
-
-- `modules/home-manager/memex.nix`：旧optionsを `sync` に置換し、失敗通知を `memex-sync` に接続する。
-- `hosts/nixos-desktop/data-disk.nix`：旧 `papis.libraryDir` 参照と `@papis` のマウントを外す。外す前に、`@papis` の資料を vault 内の新しい配置へ移しておく。
+最初の PC だけ、`memex-setup` が `sync.folder` を保存先として登録する（`git annex initremote`）。
 
 ## vault の骨格を配る側へ
 
@@ -215,9 +188,9 @@ home-manager の反映は利用側で行う。ソースを編集しただけで�
 列挙したファイルが vault に無ければ `mirror-vault` は中止する——黙って落とすと、直後の
 `rsync --delete` が repo 側からも消してしまうため。
 
-空フォルダは git に載らないので `.gitkeep` で保持する。同期ジョブは vault 自体を監視する。
-新規 vault の `.drive-sync-filter` は `- **` のみで、同期対象は利用者が選ぶ。
-既存 vault のフォルダ・フィルタ・`.gitignore` は初期化や seed で上書きしない。
+空フォルダは git に載らないので `.gitkeep` で保持する。
+新規 vault には、上の `.gitattributes` を配る。
+既存 vault のフォルダ・`.gitattributes`・`.gitignore` は初期化や seed で上書きしない。
 
 ### いつ mirror するか
 
