@@ -5,6 +5,8 @@ import sys
 
 
 def sanitize(root: Path) -> None:
+    (root / '.drive-sync-filter').write_text('- **\n')
+
     def edit(name, transform):
         path = root / name
         path.write_text(transform(path.read_text()))
@@ -16,6 +18,30 @@ def sanitize(root: Path) -> None:
     ).replace('- `Knowledge/Writing/hello worldが実行されるまで/` の記事を gemini-proofread で校正し終えた → `proofreading-drafts`\n', ''))
 
     def readme(s):
+        storage = (
+            '資料の配置、Git管理、同期、本文での表示は別々に判断する。'
+            'クリップボードから貼った画像とドラッグ＆ドロップの添付は、'
+            'Obsidian標準の保存先 `Assets/attachments/` を使う。'
+            'その他の資料は使う文脈に合わせて置き場所を決める。'
+            '原本の保護と出典の示し方は [AGENTS.md](AGENTS.md#常に守ること)、'
+            '保存の判断は `.agents/skills/restructuring-vault/SKILL.md#資料の保存` に従う。\n\n'
+            'ノート本文はGitで同期する。資料のGit管理対象は `.gitignore` で指定する。'
+            'Drive同期の対象は `.drive-sync-filter` で明示する。'
+            '新規Vaultでは対象を指定するまで同期しない。設定と手動初期化の手順は '
+            '[memex-nix README](https://github.com/khimoo/memex-nix#readme) を参照する。'
+            '退避データは、利用者が保持期限を決めるまで削除しない。\n\n'
+            '全環境共通のAI向け指示は [AGENTS.md](AGENTS.md) に記載する。'
+            'Claude Codeは [CLAUDE.md](CLAUDE.md) 経由で `@AGENTS.md` を読み込み、'
+            'Codexは直接参照する。各スキルは `.agents/skills/` に配置し、'
+            '`.claude/skills` から同じ実体を参照する。'
+            '実行環境ごとの制約は `.claude/` や `.codex/` で管理する。'
+            'Gitのコミットおよびリモートへのpushはユーザー自身が行う。\n\n'
+        )
+        s = re.sub(
+            r'(^## 保存とAI指示[ \t]*\n).*?(?=^## |\Z)',
+            lambda match: match[1] + '\n' + storage,
+            s, flags=re.M | re.S,
+        )
         # The shared guide describes a fresh Vault, not the owner's migration state.
         s = s.replace('既存の素材は従来の階層構造を維持して収容する。', '').replace('既存の素材は従来の階層構造を維持して収容する', '')
         s = s.replace('元の同期コピーは当面の間保持する', '')
@@ -38,7 +64,7 @@ def sanitize(root: Path) -> None:
     edit('README.md', readme)
     # The vault no longer keeps this README, so the skeleton always gets the fixed text.
     (root / 'LifeState/Admin').mkdir(parents=True, exist_ok=True)
-    (root / 'LifeState/Admin/README.md').write_text('# Admin — 実務リファレンス\n\n契約、履修、家電などの実務の事実を、一つの対象につき1ノートで記録する。\n\n## frontmatter の目安\n\n```yaml\n---\nconfirmed:\nevidence: []\nrenew:\ndue:\n---\n```\n\n未確認の `confirmed` は空欄にする。確認日と根拠は `confirmed` と `evidence`、更新期限は\n`renew` と `due` に記録する。変更日、旧値から新値、根拠は本文の「履歴」に残す。\n\n資料の配置、Git管理、本文での表示は別々に判断する。\n詳しい手順は `.agents/skills/updating-records/SKILL.md`、構造は\n`.agents/skills/updating-records/references/構造.md` を参照する。\n')
+    (root / 'LifeState/Admin/README.md').write_text('# Admin — 実務リファレンス\n\n契約、履修、家電などの事実を、一つの対象につき1ノートで記録する。\n\n値、確認した日、根拠と原本へのリンクを本文に結び付ける。必要になったときに原本や現物を確かめ、変更は本文の「履歴」に残す。\n\n対象に関する用事は、この資料にタスクとして記載する。生活の用事にはタスク行に `#生活` を付ける。\n\n詳しい手順は `.agents/skills/updating-records/SKILL.md`、項目の型と所有者は [[System/参照/プロパティ#人が扱う項目]] を参照する。\n')
 
     edit('System/参照/Typst記法.md', lambda s: '\n'.join(
         line for line in s.split('\n')

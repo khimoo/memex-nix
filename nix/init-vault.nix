@@ -57,17 +57,17 @@ pkgs.writeShellApplication {
       echo "init-vault: git リポジトリにしました: $vault" >&2
     fi
 
-    # 同期フォルダと端末固有のファイルは git に入れない。
+    # Git の除外は Drive の同期選択とは独立している。
+    if [ ! -e "$vault/.drive-sync-filter" ] && [ ! -L "$vault/.drive-sync-filter" ]; then
+      printf '%s\n' '- **' > "$vault/.drive-sync-filter"
+    fi
+
     if [ ! -e "$vault/.gitignore" ]; then
       cat > "$vault/.gitignore" <<'EOF'
     /.obsidian/workspace.json
     /.obsidian/workspace-mobile.json
     /Assets/attachments/*
     !/Assets/attachments/.gitkeep
-    /Assets/references/*
-    !/Assets/references/.gitkeep
-    /Assets/Originals/*
-    !/Assets/Originals/.gitkeep
     /_scratch/
     /.claudian/sessions/
     /.obsidian/plugins/realclaudian/data.json

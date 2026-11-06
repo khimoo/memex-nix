@@ -1,33 +1,8 @@
-# memex(Obsidian vault)の完結型 home-manager モジュール。
-# vault のための機能——Obsidian 本体と設定、添付フォルダの Google Drive 同期、papis(参照文献)
-# ライブラリの設定と同期——を一括で所有する。vault の位置(vaultDir)を注入するだけで、
-# どのマシンでも同一の Obsidian ワークフローが立ち上がる。
-#
-# この flake の公開面はこのモジュールだけ。非 home-manager 環境は対象外。
-#
-# rclone 認証情報はこのモジュールの管轄外。各マシンで `rclone config` が作った
-# ~/.config/rclone/rclone.conf を rclone 自身が既定で解決する。
-#
-# vault 内のパスは規約で固定する(Assets/attachments/ と Assets/references/)。可変にすると、配布する
-# .obsidian/app.json の attachmentFolderPath と食い違いうるため。設定項目にする利益が無い。
-#
-# Obsidian と claude-code は unfree なので、利用側が nixpkgs.config.allowUnfree を許可する
-# 必要がある(README の flake.nix に含めてある)。ここで独自に許可した nixpkgs を使うと、
-# 利用者の nixpkgs と二重に closure を持つことになるので、そうしない。
 { config, lib, pkgs, ... }:
 
 let
   cfg = config.services.memex;
 
-  # 同期対象のパスは規約で固定する(設定できる option にしない)。papis だけは利用側がマウント先に
-  # 使うので、読み取り専用の option(papis.libraryDir)で公開する。
-  attachmentsDir = "${cfg.vaultDir}/Assets/attachments";
-  papisDir = cfg.papis.libraryDir;
-  originalsDir = "${cfg.vaultDir}/Assets/Originals";
-
-  anySync = cfg.attachments.enable || cfg.papis.enable || cfg.originals.enable;
-
-  # 比較前に区切りと . / .. を正規化する。symlink は実行時にも確認する。
   pathParts = path: lib.foldl' (parts: part:
     if part == "" || part == "." then parts
     else if part == ".." then (if parts == [ ] then [ ] else lib.init parts)
@@ -35,40 +10,25 @@ let
   ) [ ] (lib.splitString "/" path);
   normalizedPath = path: "/${lib.concatStringsSep "/" (pathParts path)}";
   within = parent: child: parent == "/" || child == parent || lib.hasPrefix "${parent}/" child;
-  originalsFolder = normalizedPath cfg.originals.folder;
-  originalsBackupFolder = normalizedPath cfg.originals.backupFolder;
-  originalsLocalBackup = normalizedPath "${config.xdg.dataHome}/memex/originals-backups";
+  folder = normalizedPath cfg.sync.folder;
+  backupFolder = normalizedPath cfg.sync.backupFolder;
+  localBackupRoot = "${config.xdg.dataHome}/memex/files-backups";
+  validRemotePath = path: path != "" && !(lib.hasPrefix "/" path)
+    && !(lib.hasInfix ":" path) && !(lib.hasInfix "\\" path)
+    && !(builtins.elem ".." (lib.splitString "/" path));
 
-  # 同期コマンドは1本。何を同期するかは eval 時にここで焼き込む(実行時に設定を読む層は無い)。
   syncScript = import ./sync-script.nix {
-    inherit pkgs;
-    inherit (cfg) rcloneRemote;
-
-    attachments =
-      if cfg.attachments.enable
-      then { dir = attachmentsDir; inherit (cfg.attachments) folder; }
-      else null;
-
-    papis =
-      if cfg.papis.enable
-      then { dir = papisDir; inherit (cfg.papis) folder; }
-      else null;
-
-    originals =
-      if cfg.originals.enable
-      then {
-        dir = originalsDir;
-        inherit (cfg) vaultDir;
-        inherit (cfg.originals) folder backupFolder;
-      }
-      else null;
+    inherit pkgs localBackupRoot;
+    inherit (cfg) rcloneRemote vaultDir;
+    inherit (cfg.sync) folder filtersFile backupFolder;
   };
 
   # 宣言的に片付かない残り(rclone の OAuth・初回同期の曖昧ケース)を進める対話 CLI。
   # vault の用意は initializeVault が activation で片付けるので、ここには含めない。
   setupScript = import ./setup.nix {
-    inherit pkgs syncScript;
+    inherit pkgs;
     inherit (cfg) vaultDir rcloneRemote;
+    inherit (cfg.sync) filtersFile;
   };
 
   mkSyncJob = import ./sync-job.nix {
@@ -107,6 +67,10 @@ let
   };
 in
 {
+  imports = map (name: lib.mkRemovedOptionModule [ "services" "memex" name ]
+    "services.memex.sync と vault の .drive-sync-filter へ移行し、両PCと旧remoteを照合して手動初期化してください。papis は提供しません。")
+    [ "attachments" "papis" "originals" ];
+
   options.services.memex = {
     enable = lib.mkEnableOption "memex(Obsidian vault)の完結型ワークフロー";
 
@@ -115,7 +79,7 @@ in
       example = "/home/alice/memex";
       description = ''
         vault(Obsidian のノートを置くフォルダ)の絶対パス。
-        Assets/attachments/、Assets/references/、Assets/Originals/ を設定に応じて同期する。
+        Drive の同期対象は sync.filtersFile で選ぶ。
         これがマシン固有の唯一の必須設定。
       '';
     };
@@ -156,88 +120,32 @@ in
       description = "同期サービスの Wants。";
     };
 
-    attachments = {
-      enable = lib.mkOption {
-        type = lib.types.bool;
-        default = true;
-        description = "vault の Assets/attachments/ の Google Drive 双方向同期を有効化する。";
-      };
-
-      folder = lib.mkOption {
-        type = lib.types.str;
-        default = "memex-attachments";
-        description = "添付を置く Google Drive 側のフォルダ名(remote からの相対パス)。無ければ初回同期で作られる。";
-      };
-
-      intervalSeconds = lib.mkOption {
-        type = lib.types.ints.positive;
-        default = 900;
-        description = "定期バックストップ同期の間隔(秒)。イベント駆動が取りこぼした変更を拾う保険。";
-      };
-    };
-
-    papis = {
-      enable = lib.mkOption {
-        type = lib.types.bool;
-        default = false;
-        description = "papis(参照文献マネージャ)本体・設定・vault の Assets/references/ の同期を有効化する。";
-      };
-
-      libraryDir = lib.mkOption {
-        type = lib.types.str;
-        readOnly = true;
-        default = "${cfg.vaultDir}/Assets/references";
-        defaultText = lib.literalExpression ''"''${config.services.memex.vaultDir}/Assets/references"'';
-        description = ''
-          papis ライブラリの絶対パス(読み取り専用)。vault 内の位置は規約で固定する。
-          マウントなどで同じパスを扱う利用側は、パスを書き写さずにこれを読む。
-        '';
-      };
-
-      folder = lib.mkOption {
-        type = lib.types.str;
-        default = "papis-library";
-        description = "papis ライブラリを置く Google Drive 側のフォルダ名(remote からの相対パス)。";
-      };
-
-      opentool = lib.mkOption {
-        type = lib.types.str;
-        default = "xdg-open";
-        description = "papis open が使う外部ビューア。デスクトップの既定アプリに委譲する。";
-      };
-
-      intervalSeconds = lib.mkOption {
-        type = lib.types.ints.positive;
-        default = 900;
-        description = "papis ライブラリの定期バックストップ同期の間隔(秒)。";
-      };
-    };
-
-    originals = {
-      enable = lib.mkEnableOption "vault の Assets/Originals/ の Google Drive 双方向同期";
-
-      folder = lib.mkOption {
-        type = lib.types.str;
-        default = "memex-originals";
-        description = "原本を置く Google Drive 側のフォルダ(remote からの相対パス)。";
-      };
-
-      backupFolder = lib.mkOption {
-        type = lib.types.str;
-        default = "memex-originals-backups";
-        description = "原本の退避先フォルダ(同じ remote 内、同期先と重複しない相対パス)。";
-      };
-
-      intervalSeconds = lib.mkOption {
-        type = lib.types.ints.positive;
-        default = 900;
-        description = "原本の定期バックストップ同期の間隔(秒)。";
-      };
-
+    sync = {
+      enable = lib.mkEnableOption "vault のホワイトリスト式 Drive 同期";
       autoSync = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "原本の自動同期を有効化する。実 Drive 検証と手動初期化後に有効にする。";
+        description = "移行・手動初期化後に vault の監視と定期同期を有効にする。";
+      };
+      folder = lib.mkOption {
+        type = lib.types.str;
+        default = "memex-files";
+        description = "remote 内の同期先の相対パス。";
+      };
+      filtersFile = lib.mkOption {
+        type = lib.types.str;
+        default = "${cfg.vaultDir}/.drive-sync-filter";
+        description = "実行時に読む rclone bisync のホワイトリスト。末尾は - **。";
+      };
+      backupFolder = lib.mkOption {
+        type = lib.types.str;
+        default = "memex-files-backups";
+        description = "remote 内の退避先。同期先と重複しない相対パス。";
+      };
+      intervalSeconds = lib.mkOption {
+        type = lib.types.ints.positive;
+        default = 900;
+        description = "定期同期の間隔(秒)。";
       };
     };
 
@@ -285,22 +193,28 @@ in
           message = "services.memex.vaultDir には絶対パスを指定してください: ${cfg.vaultDir}";
         }
         {
-          assertion = !cfg.originals.enable || (
-            originalsFolder != "/" && originalsBackupFolder != "/"
-            && !(within originalsFolder originalsBackupFolder)
-            && !(within originalsBackupFolder originalsFolder)
+          assertion = !cfg.sync.enable || (
+            validRemotePath cfg.sync.folder && validRemotePath cfg.sync.backupFolder
+            && folder != "/" && backupFolder != "/"
+            && !(within folder backupFolder) && !(within backupFolder folder)
           );
-          message = "Originals の folder と backupFolder は空でなく、同一・祖先子孫で重複しないパスにしてください。";
+          message = "sync.folder と backupFolder は重複しない remote 内の相対パスにしてください。";
         }
         {
-          assertion = !cfg.originals.enable || !(within (normalizedPath cfg.vaultDir) originalsLocalBackup);
-          message = "Originals のローカル退避先(xdg.dataHome/memex/originals-backups)は vaultDir の外に置いてください。";
+          assertion = !cfg.sync.enable || (
+            !(within (normalizedPath cfg.vaultDir) (normalizedPath localBackupRoot))
+            && !(within (normalizedPath localBackupRoot) (normalizedPath cfg.vaultDir))
+          );
+          message = "ローカル退避先(xdg.dataHome/memex/files-backups)と vaultDir を重複させないでください。";
+        }
+        {
+          assertion = !cfg.sync.enable || lib.hasPrefix "/" cfg.sync.filtersFile;
+          message = "sync.filtersFile は絶対パスにしてください。";
         }
       ];
     })
 
-    # 同期対象が無ければ setup が案内することは残らない(vault は activation が用意する)。
-    (lib.mkIf (cfg.enable && anySync) {
+    (lib.mkIf (cfg.enable && cfg.sync.enable) {
       home.packages = [ setupScript ];
     })
 
@@ -312,47 +226,20 @@ in
       '';
     })
 
-    (lib.mkIf (cfg.enable && anySync) {
+    (lib.mkIf (cfg.enable && cfg.sync.enable) {
       home.packages = [ syncScript ];
     })
 
-    (lib.mkIf (cfg.enable && cfg.attachments.enable) (mkSyncJob {
-      name = "attachments-sync";
-      description = "memex の添付を Google Drive へ bisync する";
-      dir = attachmentsDir;
-      target = "attachments";
-      inherit (cfg.attachments) intervalSeconds;
+    (lib.mkIf (cfg.enable && cfg.sync.enable && cfg.sync.autoSync) (mkSyncJob {
+      name = "memex-sync";
+      description = "memex の選択した資料を Google Drive へ bisync する";
+      dir = cfg.vaultDir;
+      # 監視は再帰しないので vault 直下では貼り付けに反応しない。即時に同期したいのは
+      # 貼り付け画像だけで、その保存先は配布する .obsidian/app.json の attachmentFolderPath に合わせている。
+      # 他の資料は定期実行で拾う。
+      watchPaths = [ "${cfg.vaultDir}/Assets/attachments" ];
+      inherit (cfg.sync) intervalSeconds;
     }))
-
-    (lib.mkIf (cfg.enable && cfg.papis.enable) (mkSyncJob {
-      name = "papis-sync";
-      description = "papis ライブラリを Google Drive へ bisync する";
-      dir = papisDir;
-      target = "papis";
-      inherit (cfg.papis) intervalSeconds;
-    }))
-
-    (lib.mkIf (cfg.enable && cfg.originals.enable && cfg.originals.autoSync) (mkSyncJob {
-      name = "originals-sync";
-      description = "Originals を Google Drive へ bisync する";
-      dir = originalsDir;
-      target = "originals";
-      inherit (cfg.originals) intervalSeconds;
-    }))
-
-    # papis ライブラリは item ごとに info.yaml と PDF が同居するので、フォルダを丸ごと bisync
-    # すれば メタデータもバイトも1系統で運べる。programs.papis.enable が papis 本体も入れる。
-    # citekey は各 item の info.yaml の `ref:` に手で pin する運用(ref-format は設定しない)。
-    (lib.mkIf (cfg.enable && cfg.papis.enable) {
-      programs.papis = {
-        enable = true;
-        settings.opentool = cfg.papis.opentool;
-        libraries.library = {
-          isDefault = true;
-          settings.dir = papisDir;
-        };
-      };
-    })
 
     # 骨格は initializeVault が有効な環境だけに配る。
     # clone で用意する既存 vault では、削除済みのファイルを switch のたびに復元しない。

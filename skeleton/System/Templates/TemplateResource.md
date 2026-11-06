@@ -1,9 +1,3 @@
----
-confirmed:
-evidence: []
-renew:
-due:
----
 
 # 実務資料
 

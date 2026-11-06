@@ -1,32 +1,20 @@
 views:
   - type: table
-    name: 再調査
+    name: あとで見返す
     filters:
       and:
+        - file.ext == "md"
+        - note.review == true
         - or:
-            - file.inFolder("Knowledge/Wiki")
-            - file.inFolder("Knowledge/Zettel")
-        - "!note.review.isEmpty()"
+            - file.inFolder("Inbox")
+            - file.inFolder("Knowledge")
+            - file.inFolder("LifeState")
+            - and:
+                - file.inFolder("LifeLogs")
+                - '!file.inFolder("LifeLogs/Sessions")'
+            - file.path == "Home.md"
+            - file.path == "README.md"
     order:
       - file.name
+      - file.folder
       - review
-      - ai_generated
-  - type: table
-    name: AI が書いたまま
-    filters:
-      and:
-        - "!note.ai_generated.isEmpty()"
-        - '!file.inFolder("Knowledge/Reading")'
-    order:
-      - file.name
-      - ai_generated
-      - review
-  - type: table
-    name: 読書の AI 記録
-    filters:
-      and:
-        - "!note.ai_generated.isEmpty()"
-        - file.inFolder("Knowledge/Reading")
-    order:
-      - file.name
-      - ai_generated

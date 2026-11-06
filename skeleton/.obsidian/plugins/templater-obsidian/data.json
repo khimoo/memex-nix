@@ -1,0 +1,46 @@
+{
+  "data_version": 2,
+  "templates_folder": "System/Templates",
+  "trigger_on_file_creation_mode": "folder",
+  "folder_templates": [],
+  "file_templates": [],
+  "ignore_folders_on_creation": [
+    {
+      "folder": "Inbox"
+    },
+    {
+      "folder": "Knowledge"
+    },
+    {
+      "folder": "LifeLogs"
+    },
+    {
+      "folder": "LifeState/Admin"
+    },
+    {
+      "folder": "Assets"
+    },
+    {
+      "folder": "System"
+    },
+    {
+      "folder": ".scratch"
+    },
+    {
+      "folder": ".agents"
+    },
+    {
+      "folder": ".claude"
+    },
+    {
+      "folder": ".codex"
+    },
+    {
+      "folder": ".obsidian"
+    }
+  ],
+  "user_scripts_folder": "",
+  "templates_pairs": [],
+  "startup_templates": [],
+  "enabled_templates_hotkeys": []
+}

@@ -3,6 +3,7 @@ from pathlib import Path
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -16,7 +17,7 @@ SOURCE = os.environ.get('SOURCE_VAULT')
 OLD = ['Registry', 'Goals', 'Tasks', 'FleetingNote', 'Clippings', 'Drafts', 'BufferNotes', 'Reading/math', 'Reading/DB', 'Reading/art', 'Inbox/FleetingNote', 'Inbox/Clippings',
        'Resources/AI', 'Resources/サブスク', 'Resources/メール', 'Resources/住居', 'Resources/学校', 'Resources/絵',
        'Wiki', 'Zettel', 'Reading', 'Writing', 'Action', 'Dailies', 'Reviews', 'Resources', 'Templates', 'Originals', 'attachments', 'references']
-NEW = ['Knowledge', 'Knowledge/Wiki', 'Knowledge/Zettel', 'Knowledge/Reading', 'Knowledge/Writing', 'Inbox', 'LifeLogs', 'LifeLogs/Dailies', 'LifeLogs/Reviews', 'LifeLogs/Sessions', 'LifeState', 'LifeState/Action', 'LifeState/Admin', 'Assets', 'Assets/attachments', 'Assets/references', 'Assets/Originals', 'System', 'System/Templates', 'System/設計', 'System/計画', 'System/Bases', 'System/参照', '_scratch']
+NEW = ['Knowledge', 'Knowledge/Wiki', 'Knowledge/Zettel', 'Knowledge/Reading', 'Knowledge/Writing', 'Inbox', 'LifeLogs', 'LifeLogs/Dailies', 'LifeLogs/Reviews', 'LifeLogs/Sessions', 'LifeState', 'LifeState/Action', 'LifeState/Admin', 'Assets', 'Assets/attachments', 'System', 'System/Templates', 'System/設計', 'System/計画', 'System/Bases', 'System/参照', '_scratch']
 
 
 def run(*args, check=True):
@@ -62,7 +63,7 @@ class Layout(unittest.TestCase):
         for phrase in ['従来の階層構造を維持', '元の同期コピーは当面',
                        '旧環境から移行した', '移行前のチェック記号', '今回退避された']:
             self.assertNotIn(phrase, text)
-        self.assertIn('未整理のアイデアやWebクリップを一時保管する。', text)
+        self.assertIn('知識候補と、保存して参照するWebクリップを分けて置く。', text)
         self.assertIn('既存タスクの作成日や開始日などのメタデータはそのまま維持する。', text)
         self.assertIn('退避データは、利用者が保持期限を決めるまで削除しない。', text)
 
@@ -83,9 +84,28 @@ class Layout(unittest.TestCase):
             run(sys.executable, str(ROOT/'nix/sanitize-skeleton.py'), str(source))
             self.assert_current_guide((source/'README.md').read_text())
 
+    def test_export_uses_shared_storage_guide_without_instance_state(self):
+        with tempfile.TemporaryDirectory(prefix='vault-sanitize-') as temp:
+            source = Path(temp)/'source'; copy_skeleton(source)
+            path = source/'README.md'
+            guide = re.sub(
+                r'(^## 保存とAI指示\n).*?(?=^## |\Z)',
+                r'\1\nINSTANCE_STORAGE_PATH\n\nINSTANCE_SYNC_STATE\n\n',
+                path.read_text(), flags=re.M | re.S,
+            )
+            path.write_text(guide)
+            run(sys.executable, str(ROOT/'nix/sanitize-skeleton.py'), str(source))
+            shared = path.read_text()
+            self.assertNotIn('INSTANCE_STORAGE_PATH', shared)
+            self.assertNotIn('INSTANCE_SYNC_STATE', shared)
+            self.assertIn('新規Vaultでは対象を指定するまで同期しない', shared)
+            self.assertIn('## Feature / 今後検討したいこと', shared)
+            run(sys.executable, str(ROOT/'nix/sanitize-skeleton.py'), str(source))
+            self.assertEqual(path.read_text(), shared)
+
     def test_settings_match_dashboard_and_templates(self):
         tasks = json.loads((SK/'.obsidian/plugins/obsidian-tasks-plugin/data.json').read_text())
-        self.assertEqual(tasks['globalQuery'], r'path regex matches /^(LifeState\/Action|LifeLogs\/(Dailies|Reviews))\//')
+        self.assertEqual(tasks['globalQuery'], r'path regex matches /^(LifeState\/(Action|Admin)|LifeLogs\/(Dailies|Reviews))\//')
         self.assertFalse(tasks['useFilenameAsScheduledDate'])
         self.assertEqual(tasks['filenameAsDateFolders'], [])
         statuses = tasks['statusSettings']['coreStatuses'] + tasks['statusSettings']['customStatuses']
@@ -97,6 +117,59 @@ class Layout(unittest.TestCase):
                 self.assertTrue((SK/template).is_file(), template)
         git = json.loads((SK/'.obsidian/plugins/obsidian-git/data.json').read_text())
         self.assertFalse(git['autoPullOnBoot'])
+
+    def test_frontmatter_templates_have_only_needed_defaults(self):
+        for name in ['TemplateWeeklyReview.md', 'TemplateMonthly.md']:
+            text = (SK/'System/Templates'/name).read_text()
+            self.assertTrue(text.startswith('---\ncompleted: false\n---\n'))
+            self.assertNotIn('reviewed:', text)
+            self.assertNotIn('period:', text)
+        for name in ['TemplateDailyJournal.md', 'TemplateResource.md']:
+            self.assertFalse((SK/'System/Templates'/name).read_text().startswith('---'))
+        self.assertFalse((SK/'System/Templates/TemplateAction.md').exists())
+
+    def test_daily_template_dependencies_are_distributed(self):
+        daily = (SK/'System/Templates/TemplateDailyJournal.md').read_text()
+        self.assertIn('セッション.base', daily)
+        self.assertTrue((SK/'System/Bases/セッション.base').is_file())
+        self.assertTrue((SK/'System/Views/daily-edits/view.js').is_file())
+
+    def test_property_types_and_active_queries_match_redesign(self):
+        types = json.loads((SK/'.obsidian/types.json').read_text())['types']
+        self.assertEqual(types['review'], 'checkbox')
+        self.assertEqual(types['completed'], 'checkbox')
+        self.assertEqual(types['status'], 'text')
+        for name in ['ai_generated', 'focus', 'kind', 'goal', 'reviewed', 'confirmed', 'evidence']:
+            self.assertNotIn(name, types)
+        review = (SK/'System/Bases/再調査.base').read_text()
+        self.assertIn('note.review == true', review)
+        self.assertNotIn('ai_generated', review)
+        self.assertIn('Inbox/知識候補', (SK/'System/Bases/未処理.base').read_text())
+        self.assertIn('p.completed !== true', (SK/'Home.md').read_text())
+        self.assertTrue((SK/'System/参照/プロパティ.md').is_file())
+
+    def test_creation_defaults_do_not_execute_in_import_folders(self):
+        config = json.loads((SK/'.obsidian/plugins/templater-obsidian/data.json').read_text())
+        self.assertEqual(config['trigger_on_file_creation_mode'], 'folder')
+        self.assertEqual(config['folder_templates'], [])
+        ignored = {item['folder'] for item in config['ignore_folders_on_creation']}
+        self.assertTrue({'Inbox', 'Knowledge', 'LifeLogs', 'LifeState/Admin', 'Assets', 'System', '.scratch'} <= ignored)
+        self.assertFalse(config['startup_templates'])
+        self.assertFalse(config['user_scripts_folder'])
+        self.assertIn('templater-obsidian', json.loads((SK/'.obsidian/community-plugins.json').read_text()))
+        self.assertEqual(json.loads((SK/'.obsidian/plugins/journals/data.json').read_text())['journals']['weekly']['dateFormat'], 'GGGG-[W]WW')
+
+    def test_export_does_not_restore_admin_yaml(self):
+        with tempfile.TemporaryDirectory(prefix='vault-sanitize-') as temp:
+            target = Path(temp)/'source'
+            copy_skeleton(target)
+            run(sys.executable, str(ROOT/'nix/sanitize-skeleton.py'), str(target))
+            text = (target/'LifeState/Admin/README.md').read_text()
+            self.assertNotIn('confirmed:', text)
+            self.assertNotIn('renew:', text)
+            self.assertIn('本文', text)
+            self.assertIn('履歴', text)
+            self.assertIn('この資料にタスクとして記載する', text)
 
     def test_sanitize_removes_current_vault_personal_note_references(self):
         with tempfile.TemporaryDirectory(prefix='vault-sanitize-') as temp:
@@ -170,13 +243,16 @@ class Layout(unittest.TestCase):
             vault = Path(temp)/'vault'
             run(f'{TOOLS}/init-vault', str(vault))
             run(f'{TOOLS}/seed-vault', '--obsidian', str(vault))
+            self.assertEqual((vault/'.drive-sync-filter').read_text(), '- **\n')
+            self.assertFalse((vault/'Assets/Originals').exists())
+            self.assertFalse((vault/'Assets/references').exists())
             self.assertTrue((vault/'.claude/skills').is_symlink())
             self.assertTrue((vault/'.claude/skills/lint-zettel/SKILL.md').is_file())
             for name in NEW:
                 self.assertTrue((vault/name).is_dir(), name)
             for name in OLD:
                 self.assertFalse((vault/name).exists(), name)
-            for name in ['Assets/Originals/source.pdf', '_scratch/output.txt']:
+            for name in ['Assets/attachments/source.pdf', '_scratch/output.txt']:
                 self.assertEqual(run('git', '-C', str(vault), 'check-ignore', name).returncode, 0)
             (vault/'Home.md').write_text('user content\n')
             (vault/'.obsidian/app.json').write_text('{"user": true}\n')
@@ -224,6 +300,7 @@ class Layout(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix='vault-mirror-') as temp:
             source, dest = Path(temp)/'source', Path(temp)/'dest'
             copy_skeleton(source)
+            (source/'.drive-sync-filter').write_text('+ /PRIVATE_SELECTION/**\n- **\n')
             dest.mkdir(); shutil.copytree(SK, dest/'skeleton', symlinks=True)
             for name in ['Knowledge/Wiki/PRIVATE.md', 'LifeState/Action/PRIVATE.md', 'Assets/Originals/PRIVATE.pdf',
                          '.claude/settings.json', '.codex/config.toml']:

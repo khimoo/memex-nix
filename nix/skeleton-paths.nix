@@ -2,6 +2,7 @@
 # mirror-vault はこの allowlist から構成し、配布時に個人用の参照・履歴を除く。
 {
   files = [
+    ".drive-sync-filter"
     "AGENTS.md"
     "CLAUDE.md"
     "README.md"
@@ -9,6 +10,7 @@
     "System/規則台帳.md"
     "System/失敗記録.md"
     "System/参照/Typst記法.md"
+    "System/参照/プロパティ.md"
     "System/参照/学習支援.md"
     "System/参照/Jazz一次資料.md"
     "System/Templates/TemplateDailyJournal.md"
@@ -19,6 +21,8 @@
     "System/Bases/再調査.base"
     "System/Bases/未処理.base"
     "System/Bases/実務.base"
+    "System/Bases/セッション.base"
+    "System/Views/daily-edits/view.js"
     ".agents/skills/db-predict-measure/SKILL.md"
     ".agents/skills/db-predict-measure/references/観測ノートの型.md"
     ".agents/skills/editing-knowledge/SKILL.md"
@@ -56,8 +60,6 @@
     "LifeState/Admin"
     "Assets"
     "Assets/attachments"
-    "Assets/references"
-    "Assets/Originals"
     "System"
     "System/Templates"
     "System/設計"

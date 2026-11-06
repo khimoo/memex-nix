@@ -1,0 +1,71 @@
+formulas:
+  day_span: note.spans.filter(value.startsWith(this.file.name)).join(", ")
+  title_link: file.asLink(if(note.title, note.title, file.name))
+properties:
+  formula.title_link:
+    displayName: Title
+views:
+  - type: table
+    name: 今日のAI_session
+    filters:
+      and:
+        - file.inFolder("LifeLogs/Sessions")
+        - note.days.contains(this.file.name)
+        - note.launched == "user"
+    order:
+      - formula.title_link
+      - device
+      - formula.day_span
+      - agent
+      - projects
+    sort:
+      - property: projects
+        direction: ASC
+    columnSize:
+      formula.day_span: 155
+  - type: table
+    name: 今日のAI_session(自動起動)
+    filters:
+      and:
+        - file.inFolder("LifeLogs/Sessions")
+        - note.days.contains(this.file.name)
+        - note.launched == "auto"
+    order:
+      - device
+      - formula.day_span
+      - agent
+      - projects
+      - formula.title_link
+    sort:
+      - property: formula.day_span
+        direction: ASC
+  - type: table
+    name: 今週のAI_session
+    filters:
+      and:
+        - file.inFolder("LifeLogs/Sessions")
+        - note.weeks.contains(this.file.name)
+        - note.launched == "user"
+    order:
+      - spans
+      - agent
+      - projects
+      - formula.title_link
+    sort:
+      - property: file.name
+        direction: ASC
+  - type: table
+    name: 今月のAI_session
+    filters:
+      and:
+        - file.inFolder("LifeLogs/Sessions")
+        - note.months.contains(this.file.name)
+        - note.launched == "user"
+    order:
+      - spans
+      - agent
+      - projects
+      - formula.title_link
+    sort:
+      - property: file.name
+        direction: ASC

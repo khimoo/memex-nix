@@ -17,7 +17,7 @@
       },
       "confirmCreation": true,
       "nameTemplate": "{{date}}",
-      "dateFormat": "gggg-[W]ww",
+      "dateFormat": "GGGG-[W]WW",
       "folder": "LifeLogs/Reviews",
       "templates": [
         "System/Templates/TemplateWeeklyReview.md"

@@ -1,25 +1,13 @@
 views:
   - type: table
-    name: 更新期限
+    name: 資料一覧
     filters:
       and:
         - file.inFolder("LifeState/Admin")
-        - or:
-            - 'note.renew < today() + "61d"'
-            - 'note.due < today() + "61d"'
+        - file.ext == "md"
     order:
       - file.name
-      - note.renew
-      - note.due
-      - note.confirmed
-  - type: table
-    name: 確認が古い
-    filters:
-      and:
-        - file.inFolder("LifeState/Admin")
-        - or:
-            - 'note.confirmed.isEmpty()'
-            - 'note.confirmed < today() - "1y"'
-    order:
-      - file.name
-      - note.confirmed
+      - file.folder
+    sort:
+      - property: file.name
+        direction: ASC

@@ -1,9 +1,10 @@
 views:
   - type: table
-    name: 未処理
+    name: 知識候補
     filters:
       and:
-        - file.inFolder("Inbox")
+        - file.inFolder("Inbox/知識候補")
+        - file.ext == "md"
     order:
       - file.name
       - file.ctime

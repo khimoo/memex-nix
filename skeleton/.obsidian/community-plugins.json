@@ -1,9 +1,9 @@
 [
   "dataview",
-  "obsidian-linter",
   "obsidian-tasks-plugin",
   "obsidian-git",
   "realclaudian",
   "journals",
-  "typst-mate"
+  "typst-mate",
+  "templater-obsidian"
 ]

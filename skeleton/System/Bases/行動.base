@@ -1,43 +1,35 @@
-formulas:
-  focus_or_default: 'if(note.focus, note.focus, "維持")'
 views:
   - type: table
-    name: ゴール
+    name: 取り組み
     filters:
       and:
         - file.inFolder("LifeState/Action")
-        - 'note.kind == "goal"'
-    groupBy:
-      property: formula.focus_or_default
-      direction: ASC
+        - file.ext == "md"
     order:
       - file.name
-      - note.status
-      - formula.focus_or_default
+    sort:
+      - property: file.name
+        direction: ASC
   - type: table
-    name: 進行中の活動
+    name: いつか
     filters:
       and:
-        - file.inFolder("LifeState/Action")
-        - 'note.kind == "project"'
-        - 'note.status == "active"'
+        - file.inFolder("LifeState/Someday")
+        - file.ext == "md"
     order:
       - file.name
-      - note.goal
-      - note.due
+    sort:
+      - property: file.name
+        direction: ASC
   - type: table
-    name: 状態未設定
+    name: 記録
     filters:
       and:
-        - 'note.status.isEmpty()'
-        - or:
-            - file.inFolder("LifeState/Action")
-            - and:
-                - file.inFolder("Knowledge/Reading")
-                - 'file.name == "index"'
-                - 'file.folder.split("/").slice(0, file.folder.split("/").length - 1).join("/") == "Knowledge/Reading"'
-            - and:
-                - file.inFolder("Knowledge/Writing")
-                - 'file.name == "index"'
+        - file.inFolder("LifeLogs/Archive")
+        - file.ext == "md"
     order:
-      - file.path
+      - file.name
+      - file.mtime
+    sort:
+      - property: file.mtime
+        direction: DESC

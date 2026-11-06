@@ -1,8 +1,5 @@
 ---
-reviewed: false
-period: "{{date:gggg-[W]ww}}"
-start: "{{start_date:YYYY-MM-DD}}"
-end: "{{end_date:YYYY-MM-DD}}"
+completed: false
 ---
 
 ## 前週の完了と中止
@@ -14,7 +11,7 @@ end: "{{end_date:YYYY-MM-DD}}"
 
 ## 注力ゴールの予定と実際の行動量
 
-![[System/Bases/行動.base#ゴール]]
+![[System/Bases/行動.base#取り組み]]
 
 | ゴール | 予定した行動量 | 実際の行動量 | 振り返り |
 | --- | --- | --- | --- |
@@ -33,6 +30,8 @@ end: "{{end_date:YYYY-MM-DD}}"
 |  |  |
 
 ## Inboxの処理
+
+[[System/Bases/未処理.base#知識候補|知識候補を確認]]
 
 - 処理したもの・行き先：
 - 残したもの・次の対応：

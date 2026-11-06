@@ -31,7 +31,7 @@ class BisyncRecoveryTests(unittest.TestCase):
         self.environment = dict(
             os.environ, XDG_CACHE_HOME=str(self.root / "cache"), RCLONE_CONFIG=os.devnull,
         )
-        initial = self.sync()
+        initial = self.sync("--resync")
         self.assertEqual(initial.returncode, 0, initial.stdout)
         normal = self.sync()
         self.assertEqual(normal.returncode, 0, normal.stdout)

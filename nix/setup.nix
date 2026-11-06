@@ -1,21 +1,7 @@
-# 宣言的に片付かない残りだけを進める対話スクリプト。
-#
-# vault の用意(フォルダ・git init・.gitignore)と .obsidian の配置は home-manager の
-# activation が持つ。ここに残るのは、宣言では原理的に届かない2つだけ——
-# Google の OAuth(rclone config)と、初回同期が曖昧なとき(両側にデータがある)の判断。
-#
-# 設計方針:
-#   - 進捗ファイルを持たない。各ステップは実物(rclone remote / bisync の記録)を見て、
-#     済んでいれば skip する。途中で止めても再実行すれば続きから進む。
-#   - 外部サービスの認証は「確かめて、駄目なら本来のツールに渡す」(probe, don't provision)。
-#     GitHub には一切触らない——remote との接続は各自の領分。
-#   - 自分が起こした変更以外を元に戻さない。既にあるものは確認なしに上書きしない。
-#
-# 同期は専用スクリプトを呼ぶ(ロジックを二重に持たない)。
 { pkgs
 , vaultDir
 , rcloneRemote
-, syncScript
+, filtersFile
 }:
 
 let
@@ -26,6 +12,7 @@ pkgs.writeShellApplication {
   runtimeInputs = [ pkgs.coreutils pkgs.rclone pkgs.gnugrep ];
   text = ''
     vault=${lib.escapeShellArg vaultDir}
+    filters=${lib.escapeShellArg filtersFile}
 
     say() { echo "$*" >&2; }
     die() { echo "$*" >&2; exit 1; }
@@ -59,7 +46,7 @@ pkgs.writeShellApplication {
 
     この先で行うこと:
       1. Google Drive との接続確認(rclone)
-      2. 初回同期
+      2. フィルタと初期化手順の案内
 
     途中で止めても、もう一度実行すれば済んだところは飛ばします。
 
@@ -75,8 +62,8 @@ pkgs.writeShellApplication {
 
     # ---- rclone ----
     say ""
-    cat >&2 <<'EOF'
-    添付ファイル・文献 PDF・Originals は Google Drive で同期します(有効な対象のみ)。
+    cat >&2 <<EOF
+    $filters で選んだ資料を Google Drive で同期します。
     その接続は rclone が持ちます(この repo は認証情報を持ちません)。
     EOF
 
@@ -98,19 +85,9 @@ pkgs.writeShellApplication {
     done
     say "remote '$remote' に接続できました。"
 
-    # ---- 初回同期 ----
-    say ""
-    if confirm "初回の同期を実行しますか" y; then
-      if ! ${lib.getExe syncScript}; then
-        say ""
-        say "同期に失敗しました。上の rclone のメッセージが理由です。"
-        say "  → 記録が無い場合は両側の中身を確認し、失敗した対象だけを初期化してください:"
-        say "      MEMEX_FORCE_RESYNC=1 memex-sync --only <対象名> --resync"
-        say "    対象名は memex-sync --help で確認できます。Originals は originals です。"
-      fi
-    else
-      say "同期は行いませんでした。あとで memex-sync を実行してください。"
-    fi
+    say "$filters に対象のファイルやパターンを指定し、最後のルール - ** を維持してください。"
+    say "旧remoteと両PCを照合・バックアップし、新remoteへ vault 相対の配置で集めてください。"
+    say "両側を確認した後、手動で memex-sync --resync --dry-run、memex-sync --resync を実行してください。"
 
     # ---- 残る手作業 ----
     say ""
@@ -126,8 +103,7 @@ pkgs.writeShellApplication {
             git remote add origin <URL>
             git push -u origin main
 
-    自動同期が有効な対象は、ファイル変更と定期実行で同期します。
-    Originals は実 Drive での手動検証・初期化後に originals.autoSync を有効にしてください。
+    手動検証・初期化後に sync.autoSync を有効にすると、変更監視と定期実行で同期します。
     手で走らせたいときは memex-sync を実行してください。
     EOF
   '';

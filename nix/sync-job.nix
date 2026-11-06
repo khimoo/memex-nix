@@ -1,16 +1,11 @@
-# 同期 job の OS 非依存な定義。Linux(systemd)と macOS(launchd)の両方をここ1か所から導出する。
-#
-# 添付と papis は「監視するディレクトリ」と「--only に渡す対象名」しか違わない。以前は
-# systemd 版と launchd 版を対象ごとに4か所へ書いていて、片方だけ直す事故が起きうる形だった。
-#
-# 形: watcher は常駐させず、OS 純正のイベント駆動(PathModified / WatchPaths)で oneshot を
-# 起動する。取りこぼしに備えて定期実行も併せる(バックストップ)。
+# watcher を常駐させず、OS のイベント(PathModified / WatchPaths)で oneshot を起動する。
+# 監視が取りこぼした変更は定期実行で拾う。
 { lib, pkgs, homeDirectory, syncScript, after, wants }:
 
 { name        # unit 名(ログとファイル名になる)
 , description # 人間向けの説明
-, dir         # 監視・同期するディレクトリの絶対パス
-, target      # memex-sync --only に渡す対象名
+, dir         # 同期するディレクトリの絶対パス
+, watchPaths  # 変更を監視するパス。systemd も launchd も再帰的には監視しない
 , intervalSeconds
 }:
 
@@ -26,14 +21,14 @@ lib.mkMerge [
       };
       Service = {
         Type = "oneshot";
-        ExecStart = "${lib.getExe syncScript} --only ${target}";
+        ExecStart = "${lib.getExe syncScript}";
       };
     };
 
     systemd.user.paths.${name} = {
       Unit.Description = "${description}: 変更を監視して同期をトリガする";
       Path = {
-        PathModified = dir;
+        PathModified = watchPaths;
         Unit = "${name}.service";
       };
       Install.WantedBy = [ "default.target" ];
@@ -54,9 +49,9 @@ lib.mkMerge [
     launchd.agents.${name} = {
       enable = true;
       config = {
-        ProgramArguments = [ (lib.getExe syncScript) "--only" target ];
+        ProgramArguments = [ (lib.getExe syncScript) ];
         RunAtLoad = true;
-        WatchPaths = [ dir ];
+        WatchPaths = watchPaths;
         StartInterval = intervalSeconds;
         StandardErrorPath = "${homeDirectory}/Library/Logs/${name}.log";
         StandardOutPath = "${homeDirectory}/Library/Logs/${name}.log";
